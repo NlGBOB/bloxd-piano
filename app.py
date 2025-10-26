@@ -1,5 +1,3 @@
-# app.py
-
 import streamlit as st
 import json
 import os
@@ -145,19 +143,25 @@ if process_button:
 if st.session_state.output_data:
     st.markdown("---")
     st.markdown("<h3>3. Results</h3>", unsafe_allow_html=True)
+    # --- NEW: Added documentation link ---
+    st.markdown("Confused what to do now? See the [**In-Game Setup Guide**](https://github.com/NlGBOB/bloxd-piano?tab=readme-ov-file#step-6-in-game-setup) on GitHub.")
     st.info("Hover over a code block and click the icon in the top-right to copy.", icon="ℹ️")
 
     col1, col2 = st.columns(2)
     with col1:
-        st.write("**Sounds**"); st.code(st.session_state.output_data.get("sounds", ""), language="text")
-        st.write("**Notes**"); st.code(st.session_state.output_data.get("notes", ""), language="text")
+        # --- MODIFIED: Updated labels ---
+        st.write("**Sounds - Code Block 1**"); st.code(st.session_state.output_data.get("sounds", ""), language="text")
+        st.write("**Notes - Code Block 3**"); st.code(st.session_state.output_data.get("notes", ""), language="text")
     with col2:
-        st.write("**Delays**"); st.code(st.session_state.output_data.get("delays", ""), language="text")
-        st.write("**Volumes**"); st.code(st.session_state.output_data.get("volumes", ""), language="text")
+        # --- MODIFIED: Updated labels ---
+        st.write("**Delays - Code Block 2**"); st.code(st.session_state.output_data.get("delays", ""), language="text")
+        st.write("**Volumes - Code Block 4**"); st.code(st.session_state.output_data.get("volumes", ""), language="text")
 
     if 'preview_path' in st.session_state.output_data:
         st.markdown("---")
         st.markdown("<h3>Audio Preview</h3>", unsafe_allow_html=True)
+        # --- NEW: Added requested caption ---
+        st.caption("This is approximately how your song will sound in-game")
         try:
             with open(st.session_state.output_data['preview_path'], 'rb') as audio_file:
                 st.audio(audio_file.read(), format='audio/wav')
@@ -165,4 +169,4 @@ if st.session_state.output_data:
             st.warning(f"Could not load audio preview: {e}")
 
 # --- Footer ---
-st.markdown('<div class="footer">Made by chmod</div>', unsafe_allow_html=True) 
+st.markdown('<div class="footer">Made by chmod</div>', unsafe_allow_html=True)
