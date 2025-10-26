@@ -5,93 +5,42 @@ import shutil
 import tempfile
 from io import StringIO
 import sys
+import base64
 from processor import run_processing
 
 st.set_page_config(page_title="MIDI to Bloxd Converter", layout="wide", initial_sidebar_state="auto")
 
-def inject_css():
+def inject_tailwind():
     st.markdown("""
+        <script src="https://cdn.tailwindcss.com"></script>
         <style>
-            /* --- Root Variables for Easy Theming --- */
-            :root {
-                --bg-color-main: #0E1117;
-                --bg-color-secondary: #1C2026;
-                --bg-color-tertiary: #262730;
-                --text-color-primary: #FAFAFA;
-                --text-color-secondary: #A0AEC0;
-                --accent-color: #38BDF8; /* A nice, vibrant blue */
-                --border-color: #333742;
-            }
-
-            html, body, [class*="st-"] {
-                background-color: var(--bg-color-main);
-                color: var(--text-color-primary);
-                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-                font-size: 16px;
-            }
-            h1 { font-size: 3rem; font-weight: 700; }
-            h3 { font-size: 1.75rem; font-weight: 600; }
-            h4 { font-size: 1.25rem; font-weight: 500; }
-
             #MainMenu, footer { visibility: hidden; }
             header[data-testid="stHeader"] { display: none; }
-
-            .main-content-wrapper {
-                max-width: 1200px;
-                margin: auto;
-                padding: 1rem;
-                text-align: center;
-            }
-            .made-by {
-                width: 100%;
-                text-align: right;
-                color: var(--text-color-secondary);
-                font-size: 0.9rem;
-                padding: 0.5rem 1rem 0 0;
-            }
-            
-            .upload-container {
-                background-color: var(--bg-color-secondary);
-                border: 1px dashed var(--border-color);
-                border-radius: 0.75rem;
-                padding: 4rem 2rem;
-                margin-top: 2rem;
-                transition: all 0.2s ease-in-out;
-            }
-            .upload-container:hover {
-                border-color: var(--accent-color);
-                box-shadow: 0 0 15px rgba(56, 189, 248, 0.1);
+            .stFileUploader > div > div {
+                border: none;
+                background: transparent;
+                padding: 0;
             }
             .stFileUploader > div > div > button {
-                background-color: var(--accent-color);
-                color: var(--bg-color-main);
+                background-color: #3b82f6; /* A nice blue */
+                color: white;
                 border: none;
-                font-weight: 600;
+                border-radius: 0.375rem;
+                font-weight: 500;
             }
-            
+            .stFileUploader > div > div > button:hover {
+                background-color: #2563eb;
+            }
             [data-testid="stSidebar"] {
-                background-color: var(--bg-color-secondary);
-                border-right: 1px solid var(--border-color);
+                background-color: #f9fafb; /* Light gray bg */
+                border-right: 1px solid #e5e7eb;
             }
-            [data-testid="stSidebar"] h2 { font-size: 1.5rem; }
-            [data-testid="stSidebar"] .stButton button {
-                background-color: var(--accent-color);
-                color: var(--bg-color-main);
-                border: none;
-                font-weight: 600;
+            .stCodeBlock div[data-testid="stCopyButton"] > button {
+                background-color: rgba(255, 255, 255, 0.5);
+                border: 1px solid #d1d5db;
             }
-            [data-testid="stSidebar"] .stButton button.secondary {
-                background-color: var(--bg-color-tertiary);
-                color: var(--text-color-primary);
-            }
-
-            .results-header a { color: var(--accent-color); text-decoration: none; }
-            .results-header a:hover { text-decoration: underline; }
-
-            .stCodeBlock {
-                background-color: var(--bg-color-secondary);
-                border: 1px solid var(--border-color);
-                border-radius: 0.5rem;
+            .stCodeBlock div[data-testid="stCopyButton"] > button:hover {
+                 background-color: rgba(255, 255, 255, 0.8);
             }
         </style>
     """, unsafe_allow_html=True)
@@ -133,13 +82,19 @@ def process_and_store_results(midi_data, midi_filename, config_data):
             st.session_state.step = 'results'
 
 def upload_view():
-    st.markdown("<div class='made-by'>Made by chmod</div>", unsafe_allow_html=True)
-    st.markdown("<div class='main-content-wrapper'>", unsafe_allow_html=True)
-    st.title("MIDI to Bloxd Music Converter")
-    st.markdown("A simple and secure tool to convert your MIDI files into game-ready music data.", unsafe_allow_html=True)
+    st.markdown("<div class='text-right text-sm text-gray-500 pr-4 pt-2'>Made by chmod</div>", unsafe_allow_html=True)
+    st.markdown("<div class='max-w-4xl mx-auto text-center py-12 px-4'>", unsafe_allow_html=True)
+    st.markdown("<h1 class='text-5xl font-bold text-gray-800'>MIDI to Bloxd Music Converter</h1>", unsafe_allow_html=True)
+    st.markdown("<p class='mt-4 text-lg text-gray-600'>A simple and secure tool to convert your MIDI files into game-ready music data.</p>", unsafe_allow_html=True)
     
-    st.markdown("<div class='upload-container'>", unsafe_allow_html=True)
-    uploaded_file = st.file_uploader("Drag and drop file here", type=['mid', 'midi'], label_visibility="collapsed")
+    st.markdown("""
+        <div class='mt-10 border-2 border-dashed border-gray-300 rounded-xl p-8 bg-gray-50 hover:bg-gray-100 hover:border-blue-500 transition-all'>
+    """, unsafe_allow_html=True)
+    uploaded_file = st.file_uploader(
+        "Drag and drop file here", 
+        type=['mid', 'midi'], 
+        label_visibility="collapsed"
+    )
     st.markdown("</div>", unsafe_allow_html=True)
     
     if uploaded_file:
@@ -177,29 +132,30 @@ def results_view():
             for key in list(st.session_state.keys()): del st.session_state[key]
             st.rerun()
 
-    st.markdown("<div class='made-by'>Made by chmod</div>", unsafe_allow_html=True)
-    st.markdown("<div class='main-content-wrapper results-header'>", unsafe_allow_html=True)
-    st.markdown("<h3>Conversion Successful!</h3>", unsafe_allow_html=True)
-    st.markdown("Confused what to do now? Read the <a href='https://github.com/NlGBOB/bloxd-piano' target='_blank'>documentation</a>.", unsafe_allow_html=True)
+    st.markdown("<div class='text-right text-sm text-gray-500 pr-4 pt-2'>Made by chmod</div>", unsafe_allow_html=True)
+    st.markdown("<div class='max-w-7xl mx-auto py-8 px-4'>", unsafe_allow_html=True)
+    st.markdown("<div class='text-center'>", unsafe_allow_html=True)
+    st.markdown("<h3 class='text-4xl font-bold text-gray-800'>Conversion Successful!</h3>", unsafe_allow_html=True)
+    st.markdown("<p class='mt-2 text-gray-600'>Confused what to do now? Read the <a href='https://github.com/NlGBOB/bloxd-piano' target='_blank' class='text-blue-600 hover:underline'>documentation</a>.</p>", unsafe_allow_html=True)
     
     if results.get("preview"):
-        st.markdown("<p style='text-align: center; color: var(--text-color-secondary); margin-top:1rem;'>This is approximately how your MIDI will sound in-game:</p>", unsafe_allow_html=True)
+        st.markdown("<p class='text-center text-gray-500 mt-6'>This is approximately how your MIDI will sound in-game:</p>", unsafe_allow_html=True)
         st.audio(results["preview"], format='audio/wav')
     st.markdown("</div>", unsafe_allow_html=True)
     
-    st.markdown("<div class='main-content-wrapper'>", unsafe_allow_html=True)
-    cols = st.columns(4, gap="large")
+    st.markdown("<div class='mt-10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6'>", unsafe_allow_html=True)
     file_info = [("1. Sounds", "sounds"), ("2. Delays", "delays"), ("3. Notes", "notes"), ("4. Volumes", "volumes")]
 
-    for i, col in enumerate(cols):
-        with col:
-            title, key = file_info[i]
-            st.markdown(f"<h4>{title}</h4>", unsafe_allow_html=True)
-            content = results.get(key, b"").decode('utf-8', errors='ignore')
-            st.code(content, language=None)
+    for title, key in file_info:
+        st.markdown("<div class='bg-white rounded-xl shadow-sm border border-gray-200 p-4 flex flex-col'>", unsafe_allow_html=True)
+        st.markdown(f"<h4 class='text-lg font-semibold text-gray-700 text-center mb-2'>{title}</h4>", unsafe_allow_html=True)
+        content = results.get(key, b"").decode('utf-8', errors='ignore')
+        st.code(content, language=None)
+        st.markdown("</div>", unsafe_allow_html=True)
+    st.markdown("</div>", unsafe_allow_html=True)
     st.markdown("</div>", unsafe_allow_html=True)
 
-inject_css()
+inject_tailwind()
 initialize_state()
 
 if st.session_state.step == 'upload':
