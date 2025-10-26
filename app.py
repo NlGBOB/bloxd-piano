@@ -16,54 +16,44 @@ def inject_tailwind():
         <style>
             #MainMenu, footer { visibility: hidden; }
             header[data-testid="stHeader"] { display: none; }
-            body { background-color: #F9FAFB; } /* Light gray background */
+            body { background-color: #F9FAFB; }
+
             .stFileUploader > div > div { border: none; background: transparent; padding: 0; }
             .stFileUploader > div > div > button {
                 background-color: #3B82F6; color: white; border: none;
                 border-radius: 0.375rem; font-weight: 500;
             }
             .stFileUploader > div > div > button:hover { background-color: #2563EB; }
+
             [data-testid="stSidebar"] {
                 background-color: #FFFFFF;
                 border-right: 1px solid #E5E7EB;
             }
-            .code-block {
-                position: relative;
-                cursor: pointer;
+
+            .clickable-code-block {
+                position: relative; cursor: pointer;
+                background-color: #F3F4F6; color: #1F2937;
+                border-radius: 0.5rem; border: 1px solid #E5E7EB;
+                padding: 1rem; font-family: monospace;
+                white-space: pre-wrap; word-break: break-all;
                 transition: all 0.2s ease-in-out;
             }
-            .code-block:hover {
+            .clickable-code-block:hover {
                 border-color: #3B82F6;
                 box-shadow: 0 4px 12px rgba(0,0,0,0.05);
             }
-            .code-block pre {
-                white-space: pre-wrap;       /* Wrap long lines */
-                word-break: break-all;      /* Break long words */
-                background-color: #F3F4F6 !important; /* Light gray for code bg */
-                padding: 1rem;
-                border-radius: 0.5rem;
-                color: #1F2937;
-                font-family: monospace;
-            }
             .copy-feedback {
-                position: absolute;
-                top: 1rem;
-                right: 1rem;
-                background-color: #10B981; /* Green */
-                color: white;
-                padding: 0.25rem 0.75rem;
-                border-radius: 9999px;
-                font-size: 0.875rem;
-                font-weight: 500;
-                opacity: 0;
-                transition: opacity 0.3s ease;
-                pointer-events: none; /* So it doesn't interfere with clicks */
+                position: absolute; top: 0.75rem; right: 0.75rem;
+                background-color: #10B981; color: white;
+                padding: 0.25rem 0.75rem; border-radius: 9999px;
+                font-size: 0.875rem; font-weight: 500;
+                opacity: 0; transition: opacity 0.3s ease;
+                pointer-events: none;
             }
         </style>
     """, unsafe_allow_html=True)
 
 def get_clickable_code_block(title, content_str, block_id):
-    """Generates the HTML and JS for a full-width, clickable code block."""
     b64_content = base64.b64encode(content_str.encode()).decode()
     onclick_js = f"""
         const textToCopy = atob('{b64_content}');
@@ -78,9 +68,9 @@ def get_clickable_code_block(title, content_str, block_id):
     
     html = f"""
     <div class="mt-6">
-        <h4 class="text-xl font-semibold text-gray-800 text-left mb-2">{title}</h4>
-        <div onclick="{onclick_js}" class="code-block border border-gray-200 rounded-lg bg-white p-4">
-            <pre><code>{content_str}</code></pre>
+        <h4 class="text-xl font-semibold text-gray-800 text-left mb-3">{title}</h4>
+        <div onclick="{onclick_js}" class="clickable-code-block">
+            {content_str}
             <div id="feedback-{block_id}" class="copy-feedback">Copied!</div>
         </div>
     </div>
@@ -98,13 +88,20 @@ def process_and_store_results(midi_data, midi_filename, config_data):
         with tempfile.TemporaryDirectory() as temp_dir:
             midi_path = os.path.join(temp_dir, midi_filename)
             with open(midi_path, "wb") as f: f.write(midi_data)
-            old_stdout, sys.stdout = sys.stdout, StringIO()
+
+            old_stdout = sys.stdout
+            captured_output = StringIO()
+            sys.stdout = captured_output
+
             output_dir = run_processing(
                 midi_file_path=midi_path, config_data=config_data,
                 render_preview_flag=True, sound_folder_path="sounds"
             )
+            
             sys.stdout = old_stdout
-            results = {"log": sys.stdout.getvalue()}
+            log_output = captured_output.getvalue()
+
+            results = {"log": log_output}
             if output_dir:
                 base_name = os.path.splitext(midi_filename)[0]
                 file_map = {
@@ -174,6 +171,7 @@ def results_view():
         
     st.markdown("</div>", unsafe_allow_html=True)
 
+# Main App Logic
 inject_tailwind()
 initialize_state()
 
