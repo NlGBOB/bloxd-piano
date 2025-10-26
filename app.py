@@ -4,15 +4,12 @@ import os
 import tempfile
 from processor import run_processing, strip_extension, PIANO_SOUND_DATA
 
-# --- Page Configuration ---
-# This is set first and is now complemented by the config.toml file
 st.set_page_config(
     page_title="MIDI to Bloxd Music Converter",
     layout="centered",
     initial_sidebar_state="collapsed"
 )
 
-# --- Default Configuration & State Management ---
 if 'config_text' not in st.session_state:
     DEFAULT_CONFIG = {
         "palette": [strip_extension(s['filename']) for s in PIANO_SOUND_DATA],
@@ -26,17 +23,13 @@ if 'config_text' not in st.session_state:
 if 'output_data' not in st.session_state:
     st.session_state.output_data = None
 
-# --- Minimal CSS for Layout and Polish ---
-# The config.toml handles the colors, this CSS handles the spacing and look.
 st.markdown("""
 <style>
-    /* Center the main content block for a cleaner look */
     .block-container {
         padding-top: 2rem;
         padding-bottom: 2rem;
     }
     
-    /* Make headers lighter and more spaced out */
     h1 {
         font-weight: 300;
         color: #e1e1e1;
@@ -48,7 +41,6 @@ st.markdown("""
         margin-top: 2rem;
     }
     
-    /* Style the main "Convert" button to be more prominent */
     .stButton>button {
         height: 3rem;
         font-size: 1.1rem;
@@ -65,12 +57,9 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-
-# --- Main Application Layout ---
 st.title("MIDI to Bloxd Music Converter")
 st.caption("Convert your MIDI files into a format compatible with Bloxd.io's music system.")
 
-# --- Inputs ---
 st.markdown("<h3>1. Upload MIDI</h3>", unsafe_allow_html=True)
 uploaded_midi = st.file_uploader(
     "Upload your .mid or .midi file",
@@ -92,7 +81,6 @@ with st.expander("Advanced Configuration (JSON)"):
 st.markdown("<br>", unsafe_allow_html=True)
 process_button = st.button("Convert MIDI", type="primary", use_container_width=True)
 
-# --- Processing & Results ---
 if process_button:
     st.session_state.output_data = None
     
@@ -143,24 +131,20 @@ if process_button:
 if st.session_state.output_data:
     st.markdown("---")
     st.markdown("<h3>3. Results</h3>", unsafe_allow_html=True)
-    # --- NEW: Added documentation link ---
     st.markdown("Confused what to do now? See the [**In-Game Setup Guide**](https://github.com/NlGBOB/bloxd-piano?tab=readme-ov-file#step-6-in-game-setup) on GitHub.")
     st.info("Hover over a code block and click the icon in the top-right to copy.", icon="ℹ️")
 
     col1, col2 = st.columns(2)
     with col1:
-        # --- MODIFIED: Updated labels ---
         st.write("**Sounds - Code Block 1**"); st.code(st.session_state.output_data.get("sounds", ""), language="text")
         st.write("**Notes - Code Block 3**"); st.code(st.session_state.output_data.get("notes", ""), language="text")
     with col2:
-        # --- MODIFIED: Updated labels ---
         st.write("**Delays - Code Block 2**"); st.code(st.session_state.output_data.get("delays", ""), language="text")
         st.write("**Volumes - Code Block 4**"); st.code(st.session_state.output_data.get("volumes", ""), language="text")
 
     if 'preview_path' in st.session_state.output_data:
         st.markdown("---")
         st.markdown("<h3>Audio Preview</h3>", unsafe_allow_html=True)
-        # --- NEW: Added requested caption ---
         st.caption("This is approximately how your song will sound in-game")
         try:
             with open(st.session_state.output_data['preview_path'], 'rb') as audio_file:
@@ -168,5 +152,4 @@ if st.session_state.output_data:
         except Exception as e:
             st.warning(f"Could not load audio preview: {e}")
 
-# --- Footer ---
 st.markdown('<div class="footer">Made by chmod</div>', unsafe_allow_html=True)
