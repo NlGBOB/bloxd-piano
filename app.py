@@ -5,7 +5,7 @@ import shutil
 import tempfile
 from io import StringIO
 import sys
-from processor import run_processing
+from midi_to_bloxd import run_processing
 
 st.set_page_config(
     page_title="MIDI Processor",
