@@ -13,7 +13,7 @@ st.set_page_config(page_title="MIDI to Bloxd Converter", layout="centered", init
 ACCENT_RED = "#E03A3C"
 ACCENT_RED_HOVER = "#C53030"
 ACCENT_RED_LIGHT = "#FEF2F2"
-AUTHOR_INFO = "<div class='text-right text-sm text-gray-500 pr-4 pt-2'>Made by chmod</div>"
+AUTHOR_INFO = "<div style='text-align: right; font-size: 0.875rem; color: #6B728D; padding-right: 1rem; padding-top: 0.5rem;'>Made by chmod</div>"
 DOCS_LINK = "https://github.com/NlGBOB/bloxd-piano"
 
 
@@ -42,20 +42,19 @@ def inject_styles():
             }}
 
             [data-testid="stFileUploaderDropzone"] {{
-                border: 2px dashed #D1D5DB !important; /* Lighter border */
+                border: 2px dashed #D1D5DB !important; 
                 background-color: #FFFFFF;
-                padding: 1.5rem 2rem; /* Reduced padding */
+                padding: 1.5rem 2rem; 
                 border-radius: 0.5rem;
                 transition: all 0.3s;
                 text-align: center;
                 margin-top: 1rem;
             }}
             [data-testid="stFileUploaderDropzone"]:hover {{
-                border-color: #A0AEC0; /* Subtle hover effect */
+                border-color: #A0AEC0; 
                 background-color: #FAFAFA;
             }}
-
-            /* Structure the internal elements for the custom layout */
+            
             .stFileUploader > div > div {{
                 display: flex;
                 align-items: center;
@@ -73,33 +72,45 @@ def inject_styles():
                 transition: background-color 0.2s;
                 order: 3; /* Move button to the right */
                 white-space: nowrap;
-                height: 44px; /* Fix height */
+                height: 44px; 
             }}
             .stFileUploader > div > div > button:hover {{ 
                 background-color: #374151 !important; 
             }}
             
+            .stFileUploader > div > div > button > div:first-child {{
+                 visibility: hidden;
+            }}
+
+            .stFileUploader > div > div > button:before {{
+                content: "Browse files";
+                visibility: visible;
+                display: block;
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+            }}
+
             .stFileUploader > div > div > small {{ display: none; }}
             [data-testid="stFileUploaderDropzone"] > div:first-child {{ display: none; }}
-
+            
             .file-uploader-text-placeholder {{
                 color: #A0AEC0; 
                 font-size: 0.9rem;
                 text-align: left;
-                order: 2; /* Center text */
+                order: 2; 
                 flex-grow: 1;
                 padding-left: 20px;
                 line-height: 1.5;
             }}
 
-            /* Cloud Icon Styling */
             .cloud-upload-icon {{
                 color: #A0AEC0;
                 font-size: 2.5rem;
-                order: 1; /* Move icon to the left */
+                order: 1; 
             }}
-
-
+            
             .clickable-code-block {{
                 position: relative; cursor: pointer;
                 background-color: #FFFFFF;
@@ -113,10 +124,6 @@ def inject_styles():
                 transition: all 0.2s ease-in-out;
                 min-height: 4.5rem;
                 overflow-x: auto;
-            }}
-            .clickable-code-block:hover {{
-                border-color: var(--ilovepdf-red);
-                box-shadow: 0 4px 12px rgba(0,0,0,0.05);
             }}
             .copy-feedback {{
                 position: absolute; top: 0.75rem; right: 0.75rem;
@@ -148,16 +155,16 @@ def get_clickable_code_block(title, content_str, block_id):
     """Generates a styled, copyable code block."""
     
     max_display_len = 500
-    display_content = content_str[:max_display_len].replace("\n", "")
-    if len(content_str) > max_display_len:
-        display_content += "..."
+    display_content = content_str.replace("\n", "")
+    if len(display_content) > max_display_len:
+        display_content = display_content[:max_display_len] + "..."
     
     b64_content = base64.b64encode(content_str.encode('utf-8')).decode()
     
     onclick_js = f"""
         (function() {{
             const textToCopy = atob('{b64_content}');
-            // Use fallback for older browsers if needed, but modern clipboard API is best
+            // Use modern clipboard API
             navigator.clipboard.writeText(textToCopy).then(() => {{
                 const feedbackEl = document.getElementById('feedback-{block_id}');
                 if (feedbackEl) {{
@@ -193,15 +200,12 @@ def initialize_state():
 
 def process_and_store_results(midi_data, midi_filename, config_data):
     """Handles the core processing and stores results in session state."""
-    
     with tempfile.TemporaryDirectory() as temp_dir:
         midi_path = os.path.join(temp_dir, midi_filename)
         with open(midi_path, "wb") as f: f.write(midi_data)
-
         old_stdout = sys.stdout
         captured_output = StringIO()
         sys.stdout = captured_output
-
         output_dir = run_processing(
             midi_file_path=midi_path, config_data=config_data,
             render_preview_flag=True, sound_folder_path="sounds"
@@ -218,12 +222,16 @@ def process_and_store_results(midi_data, midi_filename, config_data):
                 "notes": f"3_{base_name}_notes.txt", "volumes": f"4_{base_name}_volumes.txt",
                 "preview": f"8_{base_name}_preview.wav"
             }
+            
             for key, fname in file_map.items():
                 fpath = os.path.join(output_dir, fname)
                 if os.path.exists(fpath):
-                    mode = "rb" if key == "preview" else "r"
-                    with open(fpath, mode, encoding='utf-8') as f: 
-                        results[key] = f.read()
+                    if key == "preview":
+                        with open(fpath, "rb") as f: 
+                            results[key] = f.read()
+                    else:
+                        with open(fpath, "r", encoding='utf-8') as f: 
+                            results[key] = f.read()
 
         st.session_state.results = results
         st.session_state.step = 'results'
@@ -235,18 +243,19 @@ def upload_view():
     
     st.markdown(AUTHOR_INFO, unsafe_allow_html=True)
     st.markdown(f"<div style='text-align: center; max-width: 600px; margin: 40px auto;'>", unsafe_allow_html=True)
-    st.markdown(f"<h1 style='font-size: 3rem; font-weight: 700; color: #1F2937;'>MIDI to Bloxd Music Converter</h1>", unsafe_allow_html=True)
-    
-    st.markdown("<p style='margin-top: 1rem; font-size: 1.1rem; color: #4B5563;'>Convert MIDI files into the compressed strings required for Bloxd.</p>", unsafe_allow_html=True)
-    
+    st.markdown(f"<h1 style='font-size: 2.5rem; font-weight: 700; color: #1F2937; text-align: left;'>MIDI to Bloxd Music Converter</h1>", unsafe_allow_html=True)
+    st.markdown("<p style='margin-top: 0.5rem; font-size: 1rem; color: #4B5563; text-align: left;'>Convert MIDI files into the compressed strings required for Bloxd.</p>", unsafe_allow_html=True)
     st.markdown("""
-        <div class="cloud-upload-icon">⬆️</div>
+        <div class="cloud-upload-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" style="width: 40px; height: 40px;">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 16.5V9.75m0 0l3.75 3.75M12 9.75L8.25 13.5M15.75 19.5h-7.5m10.5-3.75h-3.75M8.25 15.75H4.5" />
+            </svg>
+        </div>
         <div class="file-uploader-text-placeholder">
             Drag and drop file here<br>
             <span style='font-size: 0.8rem; color: #6B728D;'>.mid or .midi files only</span>
         </div>
     """, unsafe_allow_html=True)
-
     uploaded_file = st.file_uploader(
         "Select MIDI File", 
         type=['mid', 'midi'], 
@@ -263,17 +272,15 @@ def upload_view():
 
 def processing_view():
     """Handles the redirection and calls the processing function with a spinner."""
-    
     st.markdown(f"<div style='text-align: center; max-width: 600px; margin: 100px auto;'>", unsafe_allow_html=True)
     st.markdown(f"<h3 style='font-size: 2rem; font-weight: 700; color: #1F2937;'>Processing file: {st.session_state.midi_filename}</h3>", unsafe_allow_html=True)
-    
     with st.spinner("Analyzing MIDI, mapping sounds, and generating audio preview. Please wait..."):
         config_str = st.session_state.get("config_json", '{}')
         try: 
             config_data = json.loads(config_str)
         except json.JSONDecodeError: 
             st.error("Invalid JSON configuration detected in session state. Cannot proceed.")
-            st.session_state.step = 'results' # Redirect to results to allow correction
+            st.session_state.step = 'results' 
             return 
         
         process_and_store_results(st.session_state.midi_data, st.session_state.midi_filename, config_data)
@@ -284,19 +291,17 @@ def processing_view():
 def results_view():
     """Renders the results page with sidebar controls."""
     results = st.session_state.results
-    
     with st.sidebar:
         st.header("Conversion Options")
         st.caption(f"File: **{st.session_state.midi_filename}**")
         st.divider()
 
         st.markdown("<p style='font-weight: 600; margin-bottom: 0.5rem;'>Layering & Palette Config (JSON)</p>", unsafe_allow_html=True)
-        
         config_text = st.text_area(
             "Config JSON", 
             value=st.session_state.config_json, 
             height=200, 
-            key="config_json_input", 
+            key="config_json_input_sidebar", # Use a unique key
             label_visibility="collapsed"
         )
         
@@ -313,20 +318,17 @@ def results_view():
 
         st.divider()
         if st.button("Convert New MIDI", use_container_width=True, type="secondary"):
-            keys_to_keep = ['config_json', 'config_json_input'] 
+            keys_to_keep = ['config_json', 'config_json_input_sidebar'] 
             for key in list(st.session_state.keys()): 
                 if key not in keys_to_keep:
                     del st.session_state[key]
             st.session_state.step = 'upload'
             st.rerun()
 
-
     st.markdown(AUTHOR_INFO, unsafe_allow_html=True)
     st.markdown("<div style='max-width: 800px; margin: 0 auto; padding-top: 1rem;'>", unsafe_allow_html=True)
     st.markdown(f"<h3 style='font-size: 2.5rem; font-weight: 700; color: #1F2937;'>Conversion Complete!</h3>", unsafe_allow_html=True)
-    
     st.markdown(f"<p style='margin-top: 0.5rem; color: #4B5563;'>Confused what to do now? Read the <a href='{DOCS_LINK}' target='_blank' style='color: var(--ilovepdf-red); font-weight: 500; text-decoration: none;'>documentation</a>. Click on any box below to copy the code string directly.</p>", unsafe_allow_html=True)
-    
     if results.get("preview"):
         st.markdown("<div style='margin-top: 2rem;'>", unsafe_allow_html=True)
         st.markdown("<h4 style='font-size: 1.25rem; font-weight: 600; color: #1F2937; margin-bottom: 0.5rem;'>Preview Audio</h4>", unsafe_allow_html=True)
@@ -335,25 +337,19 @@ def results_view():
         st.markdown("</div>", unsafe_allow_html=True)
     else:
         st.warning("Could not generate audio preview. Check the log below for sound loading errors.")
-        
     file_info = [
         ("1. Sounds Data (S index)", "sounds"), 
         ("2. Delays Data (D index)", "delays"), 
         ("3. Notes Data (P index)", "notes"), 
         ("4. Volumes Data (V index)", "volumes")
     ]
-    
     for title, key in file_info:
         content = results.get(key, "Error: Data not found.")
         get_clickable_code_block(title, content, key)
-            
     with st.expander("Show Conversion Log & Debug Output", expanded=False):
         st.code(results.get("log", "No log output available."))
         
     st.markdown("</div>", unsafe_allow_html=True)
-
-
-
 if __name__ == "__main__":
     inject_styles()
     initialize_state()
