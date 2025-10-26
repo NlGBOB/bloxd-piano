@@ -165,4 +165,4 @@ if st.session_state.output_data:
             st.warning(f"Could not load audio preview: {e}")
 
 # --- Footer ---
-st.markdown('<div class="footer">Made by chmod</div>', unsafe_allow_html=True)
+st.markdown('<div class="footer">Made by chmod</div>', unsafe_allow_html=True) 
