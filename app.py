@@ -45,22 +45,27 @@ def inject_styles():
             [data-testid="stFileUploaderDropzone"] {{
                 border: 2px dashed #D1D5DB !important; 
                 background-color: #FFFFFF;
-                padding: 1.5rem 2rem; 
                 border-radius: 0.5rem;
                 transition: all 0.3s;
-                text-align: center;
                 margin-top: 1rem;
+                padding: 0 !important; /* Remove default padding for internal control */
             }}
+            
             [data-testid="stFileUploaderDropzone"]:hover {{
                 border-color: #A0AEC0; 
                 background-color: #FAFAFA;
             }}
             
+            [data-testid="stFileUploaderDropzone"] > div:first-child {{ 
+                display: none !important; 
+            }}
+            
             .stFileUploader > div > div {{
                 display: flex;
                 align-items: center;
-                justify-content: space-between;
+                justify-content: flex-end; /* Push button to the right */
                 width: 100%;
+                padding: 1.5rem 2rem; /* Re-apply padding here */
             }}
             
             .stFileUploader > div > div > button {{
@@ -81,25 +86,11 @@ def inject_styles():
             .stFileUploader > div > div > button > div {{
                 color: white !important;
             }}
-
-
+            
             .stFileUploader > div > div > small {{ display: none; }}
-            [data-testid="stFileUploaderDropzone"] > div:first-child {{ display: none; }}
-            
-            .file-uploader-text-placeholder {{
-                color: #A0AEC0; 
-                font-size: 0.9rem;
-                text-align: left;
-                flex-grow: 1;
-                padding-left: 20px;
-                line-height: 1.5;
-            }}
 
-            .cloud-upload-icon {{
-                color: #A0AEC0;
-                font-size: 2.5rem;
-            }}
             
+
             .clickable-code-block {{
                 position: relative; cursor: pointer;
                 background-color: #FFFFFF;
@@ -108,11 +99,12 @@ def inject_styles():
                 border: 1px solid #E5E7EB;
                 padding: 1rem; 
                 font-family: monospace;
-                white-space: pre-wrap; /* Preserve formatting */
+                white-space: pre-wrap; /* Preserve formatting and handle wraps */
                 word-break: break-all;
                 transition: all 0.2s ease-in-out;
                 min-height: 4.5rem;
-                overflow-x: auto;
+                overflow-x: auto; /* Allows scrolling for very long strings */
+                font-size: 0.8rem;
             }}
             
             .copy-feedback {{
@@ -142,12 +134,12 @@ def inject_styles():
     """, unsafe_allow_html=True)
 
 def get_clickable_code_block(title, content_str, block_id):
-    """Generates a styled, copyable code block."""
+    """
+    Generates a styled, copyable code block. 
+    The full content is displayed and copied (truncation removed).
+    """
     
-    max_display_len = 500
     display_content = content_str
-    if len(display_content) > max_display_len:
-        display_content = display_content[:max_display_len] + "..."
     
     b64_content = base64.b64encode(content_str.encode('utf-8')).decode()
     
@@ -239,25 +231,12 @@ def upload_view():
     st.markdown("<p style='margin-top: 0.5rem; font-size: 1rem; color: #4B5563; text-align: left;'>Convert MIDI files into the compressed strings required for Bloxd.</p>", unsafe_allow_html=True)
     
     st.markdown("""
-        <div style="text-align: left; margin-top: 1rem;">
-            <div style="color: #A0AEC0; font-size: 2.5rem; margin-bottom: 5px;">⬆️</div>
-            <p style="color: #A0AEC0; margin: 0; font-size: 0.9rem;">Drag and drop file here</p>
+        <div style="text-align: left; margin-top: 1rem; margin-bottom: 2rem;">
+            <div style="color: #4B5563; font-size: 2.5rem; margin-bottom: 5px;">⬆️</div>
+            <p style="color: #4B5563; margin: 0; font-size: 0.9rem;">Drag and drop file here</p>
             <p style="color: #6B728D; margin: 0; font-size: 0.8rem;">.mid or .midi files only</p>
         </div>
     """, unsafe_allow_html=True)
-
-    st.markdown("""
-        <div class="cloud-upload-icon" style="order: 1;">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" style="width: 40px; height: 40px;">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l1.5-1.5m1.5 1.5l-1.5-1.5M10.5 19.5L12 18l-1.5-1.5m-6 6h12a2.25 2.25 0 002.25-2.25v-1.217a4.25 4.25 0 00-2.25-3.924V11.25a6.75 6.75 0 00-6.75-6.75h-2.25a6.75 6.75 0 00-6.75 6.75v1.859a4.25 4.25 0 00-2.25 3.924v1.217A2.25 2.25 0 002.25 19.5z" />
-            </svg>
-        </div>
-        <div class="file-uploader-text-placeholder" style="order: 2;">
-            <span style='color: #E5E7EB; font-size: 1rem;'>Drag and drop file here</span><br>
-            <span style='color: #E5E7EB; font-size: 0.8rem;'>Limit 200MB per file - MID, MIDI</span>
-        </div>
-    """, unsafe_allow_html=True)
-
 
     uploaded_file = st.file_uploader(
         "Select MIDI File", 
@@ -272,6 +251,7 @@ def upload_view():
         st.session_state.midi_filename = uploaded_file.name
         st.session_state.step = 'processing_redirect' 
         st.rerun()
+
 
 def processing_view():
     """Handles the redirection and calls the processing function with a spinner."""
@@ -337,7 +317,7 @@ def results_view():
     st.markdown("<div style='max-width: 800px; margin: 0 auto; padding-top: 1rem;'>", unsafe_allow_html=True)
     st.markdown(f"<h3 style='font-size: 2.5rem; font-weight: 700; color: #1F2937;'>Conversion Complete!</h3>", unsafe_allow_html=True)
     
-    st.markdown(f"<p style='margin-top: 0.5rem; color: #4B5563;'>Confused what to do now? Read the <a href='{DOCS_LINK}' target='_blank' style='color: var(--ilovepdf-red); font-weight: 500; text-decoration: none;'>documentation</a>. Click on any box below to copy the code string directly.</p>", unsafe_allow_html=True)
+    st.markdown(f"<p style='margin-top: 0.5rem; color: #4B5563;'>Confused what to do now? Read the <a href='{DOCS_LINK}' target='_blank' style='color: var(--ilovepdf-red); font-weight: 500; text-decoration: none;'>documentation</a>. Click on any box below to copy the code string directly (the full string is copied).</p>", unsafe_allow_html=True)
     
     if results.get("preview"):
         st.markdown("<div style='margin-top: 2rem;'>", unsafe_allow_html=True)
