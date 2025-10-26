@@ -5,7 +5,6 @@ import shutil
 import tempfile
 from io import StringIO
 import sys
-import base64
 from processor import run_processing
 
 st.set_page_config(page_title="MIDI to Bloxd Converter", layout="wide", initial_sidebar_state="auto")
@@ -13,126 +12,117 @@ st.set_page_config(page_title="MIDI to Bloxd Converter", layout="wide", initial_
 def inject_css():
     st.markdown("""
         <style>
+            /* --- Root Variables for Easy Theming --- */
+            :root {
+                --bg-color-main: #0E1117;
+                --bg-color-secondary: #1C2026;
+                --bg-color-tertiary: #262730;
+                --text-color-primary: #FAFAFA;
+                --text-color-secondary: #A0AEC0;
+                --accent-color: #38BDF8; /* A nice, vibrant blue */
+                --border-color: #333742;
+            }
+
             html, body, [class*="st-"] {
-                background-color: #0E1117;
-                color: #FAFAFA;
+                background-color: var(--bg-color-main);
+                color: var(--text-color-primary);
                 font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
                 font-size: 16px;
             }
-            h1 { font-size: 2.5rem; }
-            h3 { font-size: 1.5rem; }
-            
+            h1 { font-size: 3rem; font-weight: 700; }
+            h3 { font-size: 1.75rem; font-weight: 600; }
+            h4 { font-size: 1.25rem; font-weight: 500; }
+
             #MainMenu, footer { visibility: hidden; }
             header[data-testid="stHeader"] { display: none; }
-            
+
             .main-content-wrapper {
-                max-width: 1100px;
+                max-width: 1200px;
                 margin: auto;
-                padding: 1rem 0;
+                padding: 1rem;
                 text-align: center;
             }
             .made-by {
                 width: 100%;
                 text-align: right;
-                color: #777;
+                color: var(--text-color-secondary);
                 font-size: 0.9rem;
                 padding: 0.5rem 1rem 0 0;
             }
             
-            .stFileUploader {
-                border: 1px solid #262730;
-                background-color: #1C2026;
-                border-radius: 0.5rem;
-                padding: 1rem;
+            .upload-container {
+                background-color: var(--bg-color-secondary);
+                border: 1px dashed var(--border-color);
+                border-radius: 0.75rem;
+                padding: 4rem 2rem;
+                margin-top: 2rem;
+                transition: all 0.2s ease-in-out;
+            }
+            .upload-container:hover {
+                border-color: var(--accent-color);
+                box-shadow: 0 0 15px rgba(56, 189, 248, 0.1);
             }
             .stFileUploader > div > div > button {
-                background-color: #333742;
-                color: #FAFAFA;
-                border: 1px solid #4A4F5A;
+                background-color: var(--accent-color);
+                color: var(--bg-color-main);
+                border: none;
+                font-weight: 600;
             }
             
-            .results-header a { color: #4B8BFF; text-decoration: none; }
+            [data-testid="stSidebar"] {
+                background-color: var(--bg-color-secondary);
+                border-right: 1px solid var(--border-color);
+            }
+            [data-testid="stSidebar"] h2 { font-size: 1.5rem; }
+            [data-testid="stSidebar"] .stButton button {
+                background-color: var(--accent-color);
+                color: var(--bg-color-main);
+                border: none;
+                font-weight: 600;
+            }
+            [data-testid="stSidebar"] .stButton button.secondary {
+                background-color: var(--bg-color-tertiary);
+                color: var(--text-color-primary);
+            }
+
+            .results-header a { color: var(--accent-color); text-decoration: none; }
             .results-header a:hover { text-decoration: underline; }
 
-            .result-column .stTextArea textarea {
-                font-family: monospace;
-                background-color: #0E1117;
-                border: 1px solid #262730;
-                height: 300px !important;
-                color: #FAFAFA;
-                resize: none; /* Disable resizing */
+            .stCodeBlock {
+                background-color: var(--bg-color-secondary);
+                border: 1px solid var(--border-color);
+                border-radius: 0.5rem;
             }
-            .result-title-container {
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                gap: 10px;
-                margin-bottom: 1rem;
-            }
-            .copy-icon {
-                cursor: pointer;
-                opacity: 0.6;
-                transition: opacity 0.2s ease;
-            }
-            .copy-icon:hover {
-                opacity: 1.0;
-            }
-            
         </style>
     """, unsafe_allow_html=True)
 
 def initialize_state():
-    if 'step' not in st.session_state:
-        st.session_state.step = 'upload'
-    if 'results' not in st.session_state:
-        st.session_state.results = None
-    if 'midi_data' not in st.session_state:
-        st.session_state.midi_data = None
-    if 'midi_filename' not in st.session_state:
-        st.session_state.midi_filename = None
-
-def get_copy_button_html(content_to_copy, button_id):
-    b64_content = base64.b64encode(content_to_copy.encode()).decode()
-    copy_icon_svg = """<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>"""
-    
-    onclick_js = f"""
-        const textToCopy = atob('{b64_content}');
-        navigator.clipboard.writeText(textToCopy).then(() => {{
-            const iconElement = document.getElementById('{button_id}');
-            const originalColor = iconElement.style.stroke;
-            iconElement.style.stroke = '#4CAF50'; // Green color on success
-            setTimeout(() => {{ iconElement.style.stroke = originalColor; }}, 1500);
-        }});
-    """
-    return f"<span id='{button_id}' class='copy-icon' onclick=\"{onclick_js}\" title='Copy to clipboard'>{copy_icon_svg}</span>"
+    if 'step' not in st.session_state: st.session_state.step = 'upload'
+    if 'results' not in st.session_state: st.session_state.results = None
+    if 'midi_data' not in st.session_state: st.session_state.midi_data = None
+    if 'midi_filename' not in st.session_state: st.session_state.midi_filename = None
 
 def process_and_store_results(midi_data, midi_filename, config_data):
     with st.spinner("Processing your MIDI file..."):
         with tempfile.TemporaryDirectory() as temp_dir:
             midi_path = os.path.join(temp_dir, midi_filename)
-            with open(midi_path, "wb") as f:
-                f.write(midi_data)
+            with open(midi_path, "wb") as f: f.write(midi_data)
 
             old_stdout = sys.stdout
             sys.stdout = captured_output = StringIO()
 
             output_dir = run_processing(
-                midi_file_path=midi_path,
-                config_data=config_data,
-                render_preview_flag=True,
-                sound_folder_path="sounds"
+                midi_file_path=midi_path, config_data=config_data,
+                render_preview_flag=True, sound_folder_path="sounds"
             )
             
             sys.stdout = old_stdout
-
             results = {"log": captured_output.getvalue()}
             if output_dir:
                 base_name = os.path.splitext(midi_filename)[0]
                 file_map = {
-                    "sounds": f"1_{base_name}_sounds.txt",
-                    "delays": f"2_{base_name}_delays.txt",
-                    "notes": f"3_{base_name}_notes.txt",
-                    "volumes": f"4_{base_name}_volumes.txt",
+                    "sounds": f"1_{base_name}_sounds.txt", "delays": f"2_{base_name}_delays.txt",
+                    "notes": f"3_{base_name}_notes.txt", "volumes": f"4_{base_name}_volumes.txt",
                     "preview": f"8_{base_name}_preview.wav"
                 }
                 for key, fname in file_map.items():
@@ -146,10 +136,11 @@ def upload_view():
     st.markdown("<div class='made-by'>Made by chmod</div>", unsafe_allow_html=True)
     st.markdown("<div class='main-content-wrapper'>", unsafe_allow_html=True)
     st.title("MIDI to Bloxd Music Converter")
-    st.markdown("A simple and secure tool to convert your MIDI files into game-ready music data.")
-    st.markdown("<br>", unsafe_allow_html=True)
+    st.markdown("A simple and secure tool to convert your MIDI files into game-ready music data.", unsafe_allow_html=True)
     
+    st.markdown("<div class='upload-container'>", unsafe_allow_html=True)
     uploaded_file = st.file_uploader("Drag and drop file here", type=['mid', 'midi'], label_visibility="collapsed")
+    st.markdown("</div>", unsafe_allow_html=True)
     
     if uploaded_file:
         st.session_state.midi_data = uploaded_file.getvalue()
@@ -170,10 +161,8 @@ def results_view():
             "layering": {"comment": "Max sounds per note. 1 = no layering.", "max_layers": 2}
         }
         config_text = st.text_area(
-            "Config JSON",
-            value=json.dumps(default_config, indent=2),
-            height=200,
-            key="config_json"
+            "Config JSON", value=json.dumps(default_config, indent=2),
+            height=250, key="config_json"
         )
         if st.button("Process Again", use_container_width=True):
             try:
@@ -194,22 +183,20 @@ def results_view():
     st.markdown("Confused what to do now? Read the <a href='https://github.com/NlGBOB/bloxd-piano' target='_blank'>documentation</a>.", unsafe_allow_html=True)
     
     if results.get("preview"):
-        st.markdown("<p style='text-align: center; color: #AAA; margin-top:1rem;'>This is approximately how your MIDI will sound in-game:</p>", unsafe_allow_html=True)
+        st.markdown("<p style='text-align: center; color: var(--text-color-secondary); margin-top:1rem;'>This is approximately how your MIDI will sound in-game:</p>", unsafe_allow_html=True)
         st.audio(results["preview"], format='audio/wav')
     st.markdown("</div>", unsafe_allow_html=True)
     
     st.markdown("<div class='main-content-wrapper'>", unsafe_allow_html=True)
-    cols = st.columns(4, gap="medium")
+    cols = st.columns(4, gap="large")
     file_info = [("1. Sounds", "sounds"), ("2. Delays", "delays"), ("3. Notes", "notes"), ("4. Volumes", "volumes")]
 
     for i, col in enumerate(cols):
         with col:
             title, key = file_info[i]
+            st.markdown(f"<h4>{title}</h4>", unsafe_allow_html=True)
             content = results.get(key, b"").decode('utf-8', errors='ignore')
-            copy_html = get_copy_button_html(content, f"copy-btn-{key}")
-            
-            st.markdown(f"<div class='result-title-container'><h4>{title}</h4>{copy_html}</div>", unsafe_allow_html=True)
-            st.text_area("Content", value=content, disabled=True, label_visibility="collapsed", key=f"text_{key}")
+            st.code(content, language=None)
     st.markdown("</div>", unsafe_allow_html=True)
 
 inject_css()
