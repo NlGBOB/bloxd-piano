@@ -142,7 +142,7 @@ if __name__ == "__main__":
     parser.add_argument("midi_file", help="Path to the input MIDI file.");
     parser.add_argument("--config", default="config.json", help="Path to the settings JSON file.");
     parser.add_argument("--render-preview", action="store_true", help="Render a WAV preview simulating the game's output.")
-    parser.add_argument("--sound-folder", default="src/sounds", help="Path to the folder containing the source WAV files for rendering.")
+    parser.add_argument("--sound-folder", default="sounds", help="Path to the folder containing the source WAV files for rendering.")
     args = parser.parse_args()
     config = load_config(args.config)
 
