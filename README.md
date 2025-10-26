@@ -25,7 +25,7 @@ Follow these steps to get your MIDI music into Bloxd!
 For a faster and easier experience, you can use the web version of this tool directly in your browser—no downloads or installation required!
 
 ### **[➡️ Go to the Bloxd Piano Web App](https://bloxd-piano.streamlit.app/)**
-
+https://bloxd-piano.streamlit.app/
 The web app handles the entire conversion process for you. This means you can **completely skip Steps 1 through 5** below.
 
 **How it works:**
