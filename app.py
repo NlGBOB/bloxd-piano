@@ -12,45 +12,43 @@ st.set_page_config(page_title="MIDI to Bloxd Converter", layout="centered", init
 
 ACCENT_RED = "#E03A3C"
 ACCENT_RED_HOVER = "#C53030"
-ACCENT_RED_LIGHT = "#FEF2F2"
-AUTHOR_INFO = "<div style='text-align: right; font-size: 0.875rem; color: #6B728D; padding-right: 1rem; padding-top: 0.5rem;'>Made by chmod</div>"
+AUTHOR_INFO = "<div class='text-right text-sm text-gray-500 pr-4 pt-2'>Made by chmod</div>"
 DOCS_LINK = "https://github.com/NlGBOB/bloxd-piano"
 
 
 def inject_styles():
+    st.markdown("""
+        <script src="https://cdn.tailwindcss.com"></script>
+    """, unsafe_allow_html=True)
+    
     st.markdown(f"""
         <style>
-            @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap');
-            
+            /* Define Streamlit Overrides and Custom Variables */
             :root {{
-                --ilovepdf-red: {ACCENT_RED};
-                --ilovepdf-red-hover: {ACCENT_RED_HOVER};
-                --ilovepdf-red-light: {ACCENT_RED_LIGHT};
+                --accent-red: {ACCENT_RED};
             }}
 
             html, body, [data-testid="stAppViewContainer"] {{ 
                 background-color: #F9FAFB; 
-                font-family: 'Roboto', sans-serif;
+                font-family: ui-sans-serif, system-ui, sans-serif;
             }}
             #MainMenu, footer {{ visibility: hidden; }}
             header[data-testid="stHeader"] {{ display: none; }}
-
-            [data-testid="stSidebar"] {{
-                background-color: #FFFFFF;
-                border-right: 1px solid #E5E7EB;
-                box-shadow: 2px 0 5px rgba(0,0,0,0.02);
-            }}
-
+            
+            /* Apply Tailwind-like classes globally */
+            h1, h2, h3, h4 {{ font-family: ui-sans-serif, system-ui, sans-serif; }}
+            
             
             [data-testid="stFileUploaderDropzone"] {{
                 border: 2px dashed #D1D5DB !important; 
                 background-color: #FFFFFF;
                 border-radius: 0.5rem;
-                transition: all 0.3s;
                 margin-top: 1rem;
-                padding: 0 !important; /* Remove default padding for internal control */
+                padding: 0 !important; 
+                min-height: 140px; 
+                position: relative;
+                transition: all 0.3s;
             }}
-            
             [data-testid="stFileUploaderDropzone"]:hover {{
                 border-color: #A0AEC0; 
                 background-color: #FAFAFA;
@@ -61,52 +59,42 @@ def inject_styles():
             }}
             
             .stFileUploader > div > div {{
+                position: absolute; 
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
                 display: flex;
                 align-items: center;
-                justify-content: flex-end; /* Push button to the right */
-                width: 100%;
-                padding: 1.5rem 2rem; /* Re-apply padding here */
+                justify-content: flex-end; /* Only button alignment matters now */
+                z-index: 10;
+                padding: 0;
             }}
-            
+
             .stFileUploader > div > div > button {{
-                background-color: #1F2937 !important; /* Dark Gray/Black */
+                background-color: rgb(31 41 55) !important; /* Tailwind gray-800 */
                 color: white !important; 
                 border: none !important;
                 border-radius: 0.375rem; 
                 font-weight: 500;
                 padding: 0.75rem 1.5rem;
                 transition: background-color 0.2s;
-                white-space: nowrap;
-                height: 44px; 
+                height: 44px;
+                z-index: 20; 
+                position: absolute;
+                right: 20px;
+                bottom: 20px;
             }}
             .stFileUploader > div > div > button:hover {{ 
-                background-color: #374151 !important; 
+                background-color: rgb(55 65 81) !important; /* Tailwind gray-700 */
             }}
-            
-            .stFileUploader > div > div > button > div {{
-                color: white !important;
-            }}
-            
             .stFileUploader > div > div > small {{ display: none; }}
 
-            
-
-            .clickable-code-block {{
-                position: relative; cursor: pointer;
-                background-color: #FFFFFF;
-                color: #1F2937;
-                border-radius: 0.5rem; 
-                border: 1px solid #E5E7EB;
-                padding: 1rem; 
-                font-family: monospace;
-                white-space: pre-wrap; /* Preserve formatting and handle wraps */
-                word-break: break-all;
-                transition: all 0.2s ease-in-out;
-                min-height: 4.5rem;
-                overflow-x: auto; /* Allows scrolling for very long strings */
-                font-size: 0.8rem;
+            .clickable-code-block-container {{
+                position: relative; 
+                cursor: pointer;
+                overflow: hidden; 
             }}
-            
             .copy-feedback {{
                 position: absolute; top: 0.75rem; right: 0.75rem;
                 background-color: #10B981; color: white;
@@ -116,32 +104,24 @@ def inject_styles():
                 opacity: 0; transition: opacity 0.3s ease;
                 pointer-events: none;
             }}
-            
             .stButton button {{
-                background-color: var(--ilovepdf-red) !important;
+                background-color: var(--accent-red) !important;
                 color: white !important;
-                border: 1px solid var(--ilovepdf-red) !important;
-                border-radius: 0.5rem;
-                font-weight: 600;
-                transition: all 0.2s;
+                border: 1px solid var(--accent-red) !important;
             }}
             .stButton button:hover {{
-                background-color: var(--ilovepdf-red-hover) !important;
-                border-color: var(--ilovepdf-red-hover) !important;
+                background-color: {ACCENT_RED_HOVER} !important; 
+                border-color: {ACCENT_RED_HOVER} !important;
             }}
 
         </style>
     """, unsafe_allow_html=True)
 
 def get_clickable_code_block(title, content_str, block_id):
-    """
-    Generates a styled, copyable code block. 
-    The full content is displayed and copied (truncation removed).
-    """
     
-    display_content = content_str
+    full_content = content_str.strip()
     
-    b64_content = base64.b64encode(content_str.encode('utf-8')).decode()
+    b64_content = base64.b64encode(full_content.encode('utf-8')).decode()
     
     onclick_js = f"""
         const textToCopy = atob('{b64_content}');
@@ -156,14 +136,31 @@ def get_clickable_code_block(title, content_str, block_id):
     
     html = f"""
     <div class="mt-4">
-        <h4 style="font-size: 1.125rem; font-weight: 600; color: #1F2937; margin-bottom: 0.5rem;">{title}</h4>
-        <div onclick="{onclick_js}" class="clickable-code-block">
-            {display_content}
+        <h4 class="text-lg font-semibold text-gray-800 mb-2">{title}</h4>
+        
+        <div onclick="{onclick_js}" id="block-{block_id}" 
+             class="clickable-code-block-container 
+             bg-white border border-gray-200 rounded-lg p-3 shadow-sm transition hover:shadow-lg">
+            
+            <pre class="
+                font-mono text-sm text-gray-800 
+                whitespace-nowrap overflow-hidden text-ellipsis 
+                m-0 p-0 block
+            ">
+                {full_content}
+            </pre>
+            
             <div id="feedback-{block_id}" class="copy-feedback">Copied!</div>
+            
+            <div class="absolute top-1/2 right-4 transform -translate-y-1/2 
+                        text-xs font-semibold text-gray-500 bg-white px-2 py-0.5 rounded shadow-lg border border-gray-100">
+                Click to Copy
+            </div>
         </div>
     </div>
     """
     st.markdown(html, unsafe_allow_html=True)
+
 
 def initialize_state():
     if 'step' not in st.session_state: st.session_state.step = 'upload'
@@ -178,8 +175,6 @@ def initialize_state():
         st.session_state.config_json = json.dumps(default_config, indent=2)
 
 def process_and_store_results(midi_data, midi_filename, config_data):
-    """Handles the core processing and stores results in session state."""
-    
     with tempfile.TemporaryDirectory() as temp_dir:
         midi_path = os.path.join(temp_dir, midi_filename)
         with open(midi_path, "wb") as f: f.write(midi_data)
@@ -221,22 +216,24 @@ def process_and_store_results(midi_data, midi_filename, config_data):
             
 
 def upload_view():
-    """Renders the centered, large input view."""
     
     st.markdown(AUTHOR_INFO, unsafe_allow_html=True)
-    st.markdown(f"<div style='text-align: center; max-width: 600px; margin: 40px auto;'>", unsafe_allow_html=True)
+    st.markdown(f"<div class='max-w-xl mx-auto mt-10'>", unsafe_allow_html=True)
     
-    st.markdown(f"<h1 style='font-size: 2.5rem; font-weight: 700; color: #1F2937; text-align: left;'>MIDI to Bloxd Music Converter</h1>", unsafe_allow_html=True)
+    st.markdown(f"<h1 class='text-4xl font-extrabold text-gray-900 mb-2'>MIDI to Bloxd Music Converter</h1>", unsafe_allow_html=True)
     
-    st.markdown("<p style='margin-top: 0.5rem; font-size: 1rem; color: #4B5563; text-align: left;'>Convert MIDI files into the compressed strings required for Bloxd.</p>", unsafe_allow_html=True)
+    st.markdown("<p class='mt-2 text-lg text-gray-500'>Convert MIDI files into the compressed strings required for Bloxd.</p>", unsafe_allow_html=True)
     
     st.markdown("""
-        <div style="text-align: left; margin-top: 1rem; margin-bottom: 2rem;">
-            <div style="color: #4B5563; font-size: 2.5rem; margin-bottom: 5px;">⬆️</div>
-            <p style="color: #4B5563; margin: 0; font-size: 0.9rem;">Drag and drop file here</p>
-            <p style="color: #6B728D; margin: 0; font-size: 0.8rem;">.mid or .midi files only</p>
-        </div>
-    """, unsafe_allow_html=True)
+        <div class="relative mt-8">
+            <div class="absolute inset-0 flex flex-col items-center justify-center p-4 pointer-events-none z-10">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-10 h-10 text-gray-400">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+                </svg>
+                <p class="mt-2 text-base font-medium text-gray-700">Drag and drop file here</p>
+                <p class="text-sm text-gray-500">.mid or .midi files only (Max 200MB)</p>
+            </div>
+""", unsafe_allow_html=True)
 
     uploaded_file = st.file_uploader(
         "Select MIDI File", 
@@ -244,20 +241,21 @@ def upload_view():
         label_visibility="collapsed"
     )
 
-    st.markdown("</div>", unsafe_allow_html=True)
+    st.markdown("</div>", unsafe_allow_html=True) 
 
     if uploaded_file:
         st.session_state.midi_data = uploaded_file.getvalue()
         st.session_state.midi_filename = uploaded_file.name
         st.session_state.step = 'processing_redirect' 
         st.rerun()
+    
+    st.markdown("</div>", unsafe_allow_html=True)
 
 
 def processing_view():
-    """Handles the redirection and calls the processing function with a spinner."""
     
-    st.markdown(f"<div style='text-align: center; max-width: 600px; margin: 100px auto;'>", unsafe_allow_html=True)
-    st.markdown(f"<h3 style='font-size: 2rem; font-weight: 700; color: #1F2937;'>Processing file: {st.session_state.midi_filename}</h3>", unsafe_allow_html=True)
+    st.markdown(f"<div class='text-center max-w-xl mx-auto mt-32'>", unsafe_allow_html=True)
+    st.markdown(f"<h3 class='text-3xl font-bold text-gray-800'>Processing file: {st.session_state.midi_filename}</h3>", unsafe_allow_html=True)
     
     with st.spinner("Analyzing MIDI, mapping sounds, and generating audio preview. Please wait..."):
         config_str = st.session_state.get("config_json", '{}')
@@ -274,7 +272,6 @@ def processing_view():
 
 
 def results_view():
-    """Renders the results page with sidebar controls."""
     results = st.session_state.results
     
     with st.sidebar:
@@ -282,7 +279,7 @@ def results_view():
         st.caption(f"File: **{st.session_state.midi_filename}**")
         st.divider()
 
-        st.markdown("<p style='font-weight: 600; margin-bottom: 0.5rem;'>Layering & Palette Config (JSON)</p>", unsafe_allow_html=True)
+        st.markdown("<p class='font-semibold mb-2'>Layering & Palette Config (JSON)</p>", unsafe_allow_html=True)
         
         config_text = st.text_area(
             "Config JSON", 
@@ -292,7 +289,7 @@ def results_view():
             label_visibility="collapsed"
         )
         
-        st.markdown("<div style='margin-top: 20px;'>", unsafe_allow_html=True)
+        st.markdown("<div class='mt-5'>", unsafe_allow_html=True)
         if st.button("Rerun Conversion", use_container_width=True):
             try:
                 st.session_state.config_json = config_text
@@ -314,15 +311,15 @@ def results_view():
 
 
     st.markdown(AUTHOR_INFO, unsafe_allow_html=True)
-    st.markdown("<div style='max-width: 800px; margin: 0 auto; padding-top: 1rem;'>", unsafe_allow_html=True)
-    st.markdown(f"<h3 style='font-size: 2.5rem; font-weight: 700; color: #1F2937;'>Conversion Complete!</h3>", unsafe_allow_html=True)
+    st.markdown("<div class='max-w-3xl mx-auto pt-4'>", unsafe_allow_html=True)
+    st.markdown(f"<h3 class='text-4xl font-extrabold text-gray-900'>Conversion Complete!</h3>", unsafe_allow_html=True)
     
-    st.markdown(f"<p style='margin-top: 0.5rem; color: #4B5563;'>Confused what to do now? Read the <a href='{DOCS_LINK}' target='_blank' style='color: var(--ilovepdf-red); font-weight: 500; text-decoration: none;'>documentation</a>. Click on any box below to copy the code string directly (the full string is copied).</p>", unsafe_allow_html=True)
+    st.markdown(f"<p class='mt-2 text-gray-600'>Read the <a href='{DOCS_LINK}' target='_blank' class='text-red-600 font-semibold no-underline hover:underline'>documentation</a> if you are confused. Click on any box below to copy the **full** code string.</p>", unsafe_allow_html=True)
     
     if results.get("preview"):
-        st.markdown("<div style='margin-top: 2rem;'>", unsafe_allow_html=True)
-        st.markdown("<h4 style='font-size: 1.25rem; font-weight: 600; color: #1F2937; margin-bottom: 0.5rem;'>Preview Audio</h4>", unsafe_allow_html=True)
-        st.markdown("<p style='font-size: 0.9rem; color: #6B728D;'>This simulation uses sampled sounds to estimate how the track will sound in-game.</p>", unsafe_allow_html=True)
+        st.markdown("<div class='mt-6'>", unsafe_allow_html=True)
+        st.markdown("<h4 class='text-xl font-semibold text-gray-800 mb-2'>Preview Audio</h4>", unsafe_allow_html=True)
+        st.markdown("<p class='text-sm text-gray-500'>This simulation uses sampled sounds to estimate how the track will sound in-game.</p>", unsafe_allow_html=True)
         st.audio(results["preview"], format='audio/wav')
         st.markdown("</div>", unsafe_allow_html=True)
     else:
