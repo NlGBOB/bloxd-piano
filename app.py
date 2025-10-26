@@ -58,7 +58,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 st.title("MIDI to Bloxd Music Converter")
-st.caption("Convert your MIDI files into a format compatible with Bloxd.io's music system.")
+st.caption("Convert your MIDI files into a format compatible with Bloxd")
 
 st.markdown("<h3>1. Upload MIDI</h3>", unsafe_allow_html=True)
 uploaded_midi = st.file_uploader(
