@@ -22,17 +22,17 @@ Follow these steps to get your MIDI music into Bloxd!
 
 ## 🚀 Easiest Method: Use the Online Web App!
 
-For a faster and easier experience, you can use the web version of this tool directly in your browser—no downloads or installation required!
+For a faster and easier experience, you can use the web version of this tool directly in your browser.
 
 ### **[➡️ Go to the Bloxd Piano Web App](https://bloxd-piano.streamlit.app/)**
 https://bloxd-piano.streamlit.app/
 
-The web app handles the entire conversion process for you. This means you can **completely skip Steps 1 through 5** below.
+The web app handles the conversion process for you. You can **completely skip Steps 1 through 5** below.
 
 **How it works:**
 1.  Visit the web app link above.
-2.  Upload your `.mid` file.
-3.  Configure the `palette` and `layering` options directly on the page. (if you want)
+2.  Upload your `.mid`/`.midi` file.
+3.  Configure the `palette` and `layering` options (if you want)
 4.  Click "Convert", and wait until it generates 4 code blocks
 
 Once you have your text files, **jump directly to Step 6: In-Game Setup**.
