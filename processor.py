@@ -6,8 +6,6 @@ from collections import Counter, defaultdict
 from scipy.io import wavfile
 from scipy import signal
 
-# --- All your constants and helper functions from the original script ---
-# (No changes needed in this section)
 
 PIANO_HZ = np.array([27.50, 29.14, 30.87, 32.70, 34.65, 36.71, 38.89, 41.20, 43.65, 46.25, 49.00, 51.91, 55.00, 58.27, 61.74, 65.41, 69.30, 73.42, 77.78, 82.41, 87.31, 92.50, 98.00, 103.83, 110.00, 116.54, 123.47, 130.81, 138.59, 146.83, 155.56, 164.81, 174.61, 185.00, 196.00, 207.65, 220.00, 233.08, 246.94, 261.63, 277.18, 293.66, 311.13, 329.63, 349.23, 369.99, 392.00, 415.30, 440.00, 466.16, 493.88, 523.25, 554.37, 587.33, 622.25, 659.26, 698.46, 739.99, 783.99, 830.61, 880.00, 932.33, 987.77, 1046.50, 1108.73, 1174.66, 1244.51, 1318.51, 1396.91, 1479.98, 1567.98, 1661.22, 1760.00, 1864.66, 1975.53, 2093.00, 2217.46, 2349.32, 2489.02, 2637.02, 2793.83, 2959.96, 3135.96, 3322.44, 3520.00, 3729.31, 3951.07, 4186.01])
 NOTE_INDEX_TO_CHAR_MAP = "⁰¹²³⁴⁵⁶⁷⁸⁹ᵃᵇᶜᵈᵉᶠᵍʰⁱʲᵏˡᵐᶰⁿᵒᵖʳˢᵗᵘᵛʷˣʸᶻʱʴʵʶ₀₁₂₃₄₅₆₇₈₉ₐₑₒₓₔₕᵢⱼᵣᵤᵥₖₗₘₙₚₛₜ​‌‍⁠⁡⁢⁣⁤⁧⁩⁨⁪⁫⁬⁭⁮⁯﻿︀︁︂︃︄︅︆︇︈︉︊︋︌︍"
@@ -34,7 +32,6 @@ def hz_to_closest_piano_note_index(target_hz):
 def strip_extension(name):
     return name[:-4] if isinstance(name, str) and name.lower().endswith('.wav') else name
 
-# Modified load_config to not interact with the filesystem
 def get_config(user_config_data):
     default_config = {
         "palette": [strip_extension(s['filename']) for s in PIANO_SOUND_DATA],
@@ -43,7 +40,6 @@ def get_config(user_config_data):
             "max_layers": 2
         }
     }
-    # Merge user config with defaults
     for key, value in default_config.items():
         if key not in user_config_data:
             user_config_data[key] = value
@@ -133,13 +129,11 @@ def render_simulation_from_events(game_events, sound_folder, output_filename, sa
     wavfile.write(output_filename, sample_rate, (master_track * 32767).astype(np.int16))
     print(f"Successfully rendered simulation to '{output_filename}'!")
 
-# --- THE MAIN PROCESSING FUNCTION FOR THE STREAMLIT APP ---
 def run_processing(midi_file_path, config_data, render_preview_flag, sound_folder_path):
     """
     This function takes inputs from the Streamlit app, runs the core MIDI processing logic,
     and returns the path to a directory containing the output files.
     """
-    # Use the config data passed from the app
     config = get_config(config_data)
 
     palette_from_config = set(config.get('palette', []))
@@ -201,19 +195,18 @@ def run_processing(midi_file_path, config_data, render_preview_flag, sound_folde
                 'volume': sound['volume'],
                 'volume_index': sound['volume_index']
             })
-            delay = 0 # Only the first sound for a note gets the delay
+            delay = 0
         last_tick = current_tick
 
     game_events.sort(key=lambda e: e['tick'])
     last_tick = 0
     for event in game_events:
         delay = event['tick'] - last_tick
-        event['delay'] = min(delay, 87) # Clamp delay to max representable value
+        event['delay'] = min(delay, 87)
         last_tick = event['tick']
 
     if game_events:
         base_name = os.path.splitext(os.path.basename(midi_file_path))[0]
-        # IMPORTANT: Create results in a temporary location, Streamlit will handle zipping
         output_dir = os.path.join("results", base_name)
         os.makedirs(output_dir, exist_ok=True)
         
@@ -268,7 +261,7 @@ def run_processing(midi_file_path, config_data, render_preview_flag, sound_folde
         if render_preview_flag:
             render_simulation_from_events(game_events, sound_folder_path, preview_path)
         
-        return output_dir # Return the path to the results
+        return output_dir 
     else:
         print("\nNo valid notes were mapped. No output files generated.")
-        return None # Return None if no files were generated
+        return None 
