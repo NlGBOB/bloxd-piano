@@ -20,11 +20,11 @@ This tool converts standard MIDI files (`.mid`) into a series of compact text st
 
 Follow these steps to get your MIDI music into Bloxd!
 
-## 🚀 Easiest Method: Use the Online Web App!
+## 🚀Easiest Method: Use the Online Web App!
 
 For a faster and easier experience, you can use the web version of this tool directly in your browser.
 
-### **[➡️ Go to the Bloxd Piano Web App](https://bloxd-piano.streamlit.app/)**
+### **Go to the Bloxd Piano Web App**
 https://bloxd-piano.streamlit.app/
 
 The web app handles the conversion process for you. You can **completely skip Steps 1 through 5** below.
