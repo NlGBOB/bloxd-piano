@@ -1,3 +1,5 @@
+# app.py
+
 import streamlit as st
 import json
 import os
@@ -5,89 +7,62 @@ import tempfile
 from processor import run_processing, strip_extension, PIANO_SOUND_DATA
 
 # --- Page Configuration ---
+# This is set first and is now complemented by the config.toml file
 st.set_page_config(
     page_title="MIDI to Bloxd Music Converter",
     layout="centered",
     initial_sidebar_state="collapsed"
 )
 
-# --- Default Configuration ---
-DEFAULT_CONFIG = {
-    "palette": [strip_extension(s['filename']) for s in PIANO_SOUND_DATA],
-    "layering": {
-        "comment": "Max sounds per note. 1 = no layering. >1 = harp_pling + layers. max layer = 5",
-        "max_layers": 2
-    }
-}
-
-# --- State Management ---
+# --- Default Configuration & State Management ---
 if 'config_text' not in st.session_state:
+    DEFAULT_CONFIG = {
+        "palette": [strip_extension(s['filename']) for s in PIANO_SOUND_DATA],
+        "layering": {
+            "comment": "Max sounds per note. 1 = no layering. >1 = harp_pling + layers. max layer = 5",
+            "max_layers": 2
+        }
+    }
     st.session_state.config_text = json.dumps(DEFAULT_CONFIG, indent=4)
+
 if 'output_data' not in st.session_state:
     st.session_state.output_data = None
 
-# --- Custom CSS for a professional Dark/Light Theme ---
+# --- Minimal CSS for Layout and Polish ---
+# The config.toml handles the colors, this CSS handles the spacing and look.
 st.markdown("""
 <style>
-    /* --- Base Theme (Light) --- */
-    .stApp {
-        background-color: #F0F2F6;
+    /* Center the main content block for a cleaner look */
+    .block-container {
+        padding-top: 2rem;
+        padding-bottom: 2rem;
     }
-    h1, h3 {
-        color: #1a1a1a;
+    
+    /* Make headers lighter and more spaced out */
+    h1 {
+        font-weight: 300;
+        color: #e1e1e1;
+        text-align: center;
     }
+    h3 {
+        font-weight: 400;
+        color: #c1c1c1;
+        margin-top: 2rem;
+    }
+    
+    /* Style the main "Convert" button to be more prominent */
     .stButton>button {
-        border-radius: 0.5rem;
-    }
-    
-    /* --- Dark Theme --- */
-    body[data-theme="dark"] .stApp {
-        background-color: #141924;
-    }
-    body[data-theme="dark"] h1, 
-    body[data-theme="dark"] h3, 
-    body[data-theme="dark"] .stMarkdown {
-        color: #FAFAFA;
-    }
-    body[data-theme="dark"] .stExpander, 
-    body[data-theme="dark"] div[data-testid="stFileUploader"] section {
-        background-color: #262730;
-    }
-    body[data-theme="dark"] .stCodeBlock, 
-    body[data-theme="dark"] .stTextArea textarea {
-        background-color: #1E1E1E !important;
-    }
-    
-    /* --- Component Styling --- */
-    .st-emotion-cache-10trblm { /* Main button */
-        border-radius: 0.5rem;
-    }
-    .stAlert {
-        border-radius: 0.5rem;
-    }
-    .main-container {
-        padding: 2rem;
-        border-radius: 0.5rem;
-        background-color: #FFFFFF;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-    }
-    body[data-theme="dark"] .main-container {
-        background-color: #1C212E;
-        box-shadow: none;
-        border: 1px solid #31333F;
+        height: 3rem;
+        font-size: 1.1rem;
+        font-weight: bold;
     }
 
-    /* --- Footer --- */
+    /* Style the footer */
     .footer {
-        text-align: right;
+        text-align: center;
         color: #6c757d;
         font-size: 0.9em;
-        margin-top: 3rem;
-        padding-top: 1rem;
-        border-top: 1px solid #dee2e6;
-    }
-    body[data-theme="dark"] .footer {
-        border-top: 1px solid #31333F;
+        margin-top: 4rem;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -96,10 +71,6 @@ st.markdown("""
 # --- Main Application Layout ---
 st.title("MIDI to Bloxd Music Converter")
 st.caption("Convert your MIDI files into a format compatible with Bloxd.io's music system.")
-st.markdown("<br>", unsafe_allow_html=True)
-
-# Wrap main inputs in a styled container
-st.markdown('<div class="main-container">', unsafe_allow_html=True)
 
 # --- Inputs ---
 st.markdown("<h3>1. Upload MIDI</h3>", unsafe_allow_html=True)
@@ -122,19 +93,14 @@ with st.expander("Advanced Configuration (JSON)"):
 
 st.markdown("<br>", unsafe_allow_html=True)
 process_button = st.button("Convert MIDI", type="primary", use_container_width=True)
-st.markdown('</div>', unsafe_allow_html=True) # Close container
 
 # --- Processing & Results ---
 if process_button:
-    # Clear previous results if any
     st.session_state.output_data = None
     
     if uploaded_midi is None:
         st.error("Please upload a MIDI file first.", icon="🚨")
     else:
-        # Placeholder for the results area
-        results_placeholder = st.empty()
-        
         sound_folder_path = "./sounds"
         if not os.path.isdir(sound_folder_path):
             st.error(f"Sound folder missing! Please create a folder named 'sounds' next to this app.", icon="🚨")
@@ -151,15 +117,13 @@ if process_button:
 
                 if output_dir:
                     st.success("Conversion successful! Your song data is ready below.", icon="✅")
-                    # Load results into a dictionary
                     output_data = {}
                     base_name = os.path.basename(output_dir)
                     
                     def read_output(key, filename):
                         path = os.path.join(output_dir, filename)
                         if os.path.exists(path):
-                            with open(path, 'r', encoding='utf-8') as f:
-                                output_data[key] = f.read()
+                            with open(path, 'r', encoding='utf-8') as f: output_data[key] = f.read()
                     
                     read_output("sounds", f"1_{base_name}_sounds.txt")
                     read_output("delays", f"2_{base_name}_delays.txt")
@@ -167,12 +131,10 @@ if process_button:
                     read_output("volumes", f"4_{base_name}_volumes.txt")
                     
                     preview_path = os.path.join(output_dir, f"8_{base_name}_preview.wav")
-                    if os.path.exists(preview_path):
-                        output_data['preview_path'] = preview_path
-
+                    if os.path.exists(preview_path): output_data['preview_path'] = preview_path
                     st.session_state.output_data = output_data
                 else:
-                    st.error("Processing finished, but no notes could be mapped. Try a different MIDI file.", icon="⚠️")
+                    st.error("Processing finished, but no notes could be mapped.", icon="⚠️")
 
             except json.JSONDecodeError:
                 st.error("Invalid JSON configuration. Please check for errors.", icon="❌")
@@ -187,15 +149,11 @@ if st.session_state.output_data:
 
     col1, col2 = st.columns(2)
     with col1:
-        st.write("**Sounds**")
-        st.code(st.session_state.output_data.get("sounds", ""), language="text")
-        st.write("**Notes**")
-        st.code(st.session_state.output_data.get("notes", ""), language="text")
+        st.write("**Sounds**"); st.code(st.session_state.output_data.get("sounds", ""), language="text")
+        st.write("**Notes**"); st.code(st.session_state.output_data.get("notes", ""), language="text")
     with col2:
-        st.write("**Delays**")
-        st.code(st.session_state.output_data.get("delays", ""), language="text")
-        st.write("**Volumes**")
-        st.code(st.session_state.output_data.get("volumes", ""), language="text")
+        st.write("**Delays**"); st.code(st.session_state.output_data.get("delays", ""), language="text")
+        st.write("**Volumes**"); st.code(st.session_state.output_data.get("volumes", ""), language="text")
 
     if 'preview_path' in st.session_state.output_data:
         st.markdown("---")
