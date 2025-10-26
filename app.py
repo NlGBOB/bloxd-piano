@@ -28,25 +28,25 @@ def inject_styles():
     
     st.markdown(f"""
         <style>
-            /* Define Custom Colors */
             :root {{
                 --bs-red-custom: {ACCENT_RED};
                 --bs-red-hover: {ACCENT_RED_HOVER};
             }}
 
             html, body, [data-testid="stAppViewContainer"] {{ 
-                background-color: #F8F9FA; /* Bootstrap Light background */
-                font-family: 'Roboto', sans-serif;
+                background-color: #F8F9FA; 
+                font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
             }}
             #MainMenu, footer {{ visibility: hidden; }}
             header[data-testid="stHeader"] {{ display: none; }}
             
             
             [data-testid="stFileUploaderDropzone"] {{
+                /* Apply dashed border and clean up padding */
                 border: 2px dashed #D1D5DB !important; 
                 background-color: #FFFFFF;
                 border-radius: 0.5rem;
-                margin-top: 1.5rem;
+                margin-top: 1rem;
                 padding: 0 !important; 
                 min-height: 140px; 
                 position: relative;
@@ -77,12 +77,18 @@ def inject_styles():
                 border-radius: 0.375rem; 
                 font-weight: 500;
                 padding: 0.75rem 1.5rem;
-                transition: background-color 0.2s;
                 height: 44px;
                 z-index: 20; 
                 position: absolute;
                 right: 20px;
                 bottom: 20px;
+                /* Ensure button text is centered */
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }}
+            .stFileUploader > div > div > button > div {{
+                color: white !important; /* Ensure text remains white */
             }}
             .stFileUploader > div > div > button:hover {{ 
                 background-color: #495057 !important; /* dark hover */
@@ -111,7 +117,14 @@ def inject_styles():
                 z-index: 30;
             }}
             
-            /* Streamlit button custom primary color */
+            /* Ensure single line display for code blocks */
+            .code-single-line {{
+                white-space: nowrap; 
+                overflow-x: hidden;
+                text-overflow: ellipsis; 
+            }}
+            
+            /* Primary button styling */
             .stButton button {{
                 background-color: var(--bs-red-custom) !important;
                 color: white !important;
@@ -121,13 +134,6 @@ def inject_styles():
                 background-color: var(--bs-red-hover) !important; 
                 border-color: var(--bs-red-hover) !important;
             }}
-            
-            /* Ensure single line display for code blocks */
-            .code-single-line {{
-                white-space: nowrap; 
-                overflow-x: hidden;
-                text-overflow: ellipsis; 
-            }}
 
         </style>
     """, unsafe_allow_html=True)
@@ -135,6 +141,10 @@ def inject_styles():
 def get_clickable_code_block(title, content_str, block_id):
     """
     Generates a Bootstrap card, single-line display, with full string copy functionality.
+    
+    NOTE: The previous error where the JS code was displayed was likely due to how
+    Streamlit handled the complex HTML string injection. Simplifying the JS display
+    and ensuring the structure is rendered correctly is key.
     """
     
     full_content = content_str.strip()
@@ -152,6 +162,7 @@ def get_clickable_code_block(title, content_str, block_id):
         }}).catch(err => console.error('Failed to copy text: ', err));
     """
     
+    
     html = f"""
     <div class="mt-4">
         <h4 class="h5 fw-semibold text-dark mb-2">{title}</h4>
@@ -168,6 +179,7 @@ def get_clickable_code_block(title, content_str, block_id):
                 </pre>
                 
                 <span class="badge bg-dark ms-3 shadow-sm" style="font-size: 0.7rem;">Click to Copy</span>
+                
             </div>
             
             <div id="feedback-{block_id}" class="copy-feedback">Copied!</div>
@@ -228,26 +240,39 @@ def process_and_store_results(midi_data, midi_filename, config_data):
         st.session_state.results = results
         st.session_state.step = 'results'
         st.rerun()
-            
 
 def upload_view():
+    """Renders the Bootstrap-styled upload view with fixed component structure."""
+    
     st.markdown(AUTHOR_INFO, unsafe_allow_html=True)
     st.markdown(f"<div class='container' style='max-width: 600px; margin-top: 2rem;'>", unsafe_allow_html=True)
     
     st.markdown(f"<h1 class='display-6 fw-bold text-dark'>MIDI to Bloxd Music Converter</h1>", unsafe_allow_html=True)
     
-    st.markdown("<p class='lead text-muted mb-4'>Convert MIDI files into the compressed strings required for Bloxd.</p>", unsafe_allow_html=True)
+    st.markdown("<p class='lead text-muted mb-3'>Convert MIDI files into the compressed strings required for Bloxd.</p>", unsafe_allow_html=True)
     
+    st.markdown("""
+        <div class="mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="text-primary mb-1" style="width: 3rem; height: 3rem;">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 19.5v-15m0 0l-6.75 6.75M12 4.5l6.75 6.75" />
+            </svg>
+            <p class="mb-0 fw-medium text-dark">Drag and drop file here</p>
+            <p class="small text-muted mb-0">.mid or .midi files only (Max 200MB)</p>
+        </div>
+    """, unsafe_allow_html=True)
     
     st.markdown("""
         <div class="position-relative">
-            <div class="position-absolute w-100 h-100 d-flex flex-column justify-content-center align-items-center p-4 pointer-events-none z-10">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="text-muted mb-2" style="width: 32px; height: 32px;">
+            <!-- This visual placeholder sits inside the dashed border -->
+            <div class="position-absolute w-100 h-100 d-flex flex-column justify-content-center align-items-center p-4 pointer-events-none z-10" style="color: #E5E7EB;">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" style="width: 32px; height: 32px;" class="mb-1">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
                 </svg>
-                <p class="mb-0 fw-medium text-dark">Drag and drop file here</p>
-                <p class="small text-muted mb-0">.mid or .midi files only (Max 200MB)</p>
+                <p class="mb-0 fw-medium">Drag and drop file here</p>
+                <p class="small mb-0">Limit 200MB per file - MID, MIDI</p>
             </div>
+
+            <!-- The functional Streamlit uploader is placed here, styled via CSS to only show the button -->
 """, unsafe_allow_html=True)
 
     uploaded_file = st.file_uploader(
@@ -256,7 +281,7 @@ def upload_view():
         label_visibility="collapsed"
     )
 
-    st.markdown("</div>", unsafe_allow_html=True)
+    st.markdown("</div>", unsafe_allow_html=True) 
 
     if uploaded_file:
         st.session_state.midi_data = uploaded_file.getvalue()
@@ -268,6 +293,7 @@ def upload_view():
 
 
 def processing_view():
+    """Handles the redirection and calls the processing function with a spinner."""
     
     st.markdown(f"<div class='container text-center' style='max-width: 600px; margin-top: 8rem;'>", unsafe_allow_html=True)
     st.markdown(f"<h3 class='h2 fw-bold text-dark'>Processing file: {st.session_state.midi_filename}</h3>", unsafe_allow_html=True)
@@ -287,6 +313,7 @@ def processing_view():
 
 
 def results_view():
+    """Renders the results page with sidebar controls."""
     results = st.session_state.results
     
     with st.sidebar:
