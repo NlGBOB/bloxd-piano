@@ -12,46 +12,45 @@ st.set_page_config(page_title="MIDI to Bloxd Converter", layout="centered", init
 
 ACCENT_RED = "#E03A3C"
 ACCENT_RED_HOVER = "#C53030"
-AUTHOR_INFO = "<div class='text-right text-sm text-gray-500 pr-4 pt-2'>Made by chmod</div>"
+AUTHOR_INFO = "<div class='text-end text-muted small pe-3 pt-2'>Made by chmod</div>"
 DOCS_LINK = "https://github.com/NlGBOB/bloxd-piano"
 
 
 def inject_styles():
     st.markdown("""
-        <script src="https://cdn.tailwindcss.com"></script>
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
     """, unsafe_allow_html=True)
+    
+    st.markdown("""
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
+    """, unsafe_allow_html=True)
+
     
     st.markdown(f"""
         <style>
-            /* Define Streamlit Overrides and Custom Variables */
+            /* Define Custom Colors */
             :root {{
-                --accent-red: {ACCENT_RED};
+                --bs-red-custom: {ACCENT_RED};
+                --bs-red-hover: {ACCENT_RED_HOVER};
             }}
 
             html, body, [data-testid="stAppViewContainer"] {{ 
-                background-color: #F9FAFB; 
-                font-family: ui-sans-serif, system-ui, sans-serif;
+                background-color: #F8F9FA; /* Bootstrap Light background */
+                font-family: 'Roboto', sans-serif;
             }}
             #MainMenu, footer {{ visibility: hidden; }}
             header[data-testid="stHeader"] {{ display: none; }}
-            
-            /* Apply Tailwind-like classes globally */
-            h1, h2, h3, h4 {{ font-family: ui-sans-serif, system-ui, sans-serif; }}
             
             
             [data-testid="stFileUploaderDropzone"] {{
                 border: 2px dashed #D1D5DB !important; 
                 background-color: #FFFFFF;
                 border-radius: 0.5rem;
-                margin-top: 1rem;
+                margin-top: 1.5rem;
                 padding: 0 !important; 
                 min-height: 140px; 
                 position: relative;
                 transition: all 0.3s;
-            }}
-            [data-testid="stFileUploaderDropzone"]:hover {{
-                border-color: #A0AEC0; 
-                background-color: #FAFAFA;
             }}
             
             [data-testid="stFileUploaderDropzone"] > div:first-child {{ 
@@ -66,13 +65,13 @@ def inject_styles():
                 height: 100%;
                 display: flex;
                 align-items: center;
-                justify-content: flex-end; /* Only button alignment matters now */
+                justify-content: flex-end; 
                 z-index: 10;
                 padding: 0;
             }}
 
             .stFileUploader > div > div > button {{
-                background-color: rgb(31 41 55) !important; /* Tailwind gray-800 */
+                background-color: var(--bs-dark) !important; 
                 color: white !important; 
                 border: none !important;
                 border-radius: 0.375rem; 
@@ -86,38 +85,57 @@ def inject_styles():
                 bottom: 20px;
             }}
             .stFileUploader > div > div > button:hover {{ 
-                background-color: rgb(55 65 81) !important; /* Tailwind gray-700 */
+                background-color: #495057 !important; /* dark hover */
             }}
             .stFileUploader > div > div > small {{ display: none; }}
+
 
             .clickable-code-block-container {{
                 position: relative; 
                 cursor: pointer;
                 overflow: hidden; 
+                transition: box-shadow 0.2s;
             }}
+            .clickable-code-block-container:hover {{
+                box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important;
+            }}
+
             .copy-feedback {{
                 position: absolute; top: 0.75rem; right: 0.75rem;
                 background-color: #10B981; color: white;
-                padding: 0.25rem 0.75rem; border-radius: 9999px;
+                padding: 0.25rem 0.75rem; border-radius: 50rem;
                 font-size: 0.75rem; 
                 font-weight: 500;
                 opacity: 0; transition: opacity 0.3s ease;
                 pointer-events: none;
+                z-index: 30;
             }}
+            
+            /* Streamlit button custom primary color */
             .stButton button {{
-                background-color: var(--accent-red) !important;
+                background-color: var(--bs-red-custom) !important;
                 color: white !important;
-                border: 1px solid var(--accent-red) !important;
+                border: 1px solid var(--bs-red-custom) !important;
             }}
             .stButton button:hover {{
-                background-color: {ACCENT_RED_HOVER} !important; 
-                border-color: {ACCENT_RED_HOVER} !important;
+                background-color: var(--bs-red-hover) !important; 
+                border-color: var(--bs-red-hover) !important;
+            }}
+            
+            /* Ensure single line display for code blocks */
+            .code-single-line {{
+                white-space: nowrap; 
+                overflow-x: hidden;
+                text-overflow: ellipsis; 
             }}
 
         </style>
     """, unsafe_allow_html=True)
 
 def get_clickable_code_block(title, content_str, block_id):
+    """
+    Generates a Bootstrap card, single-line display, with full string copy functionality.
+    """
     
     full_content = content_str.strip()
     
@@ -136,26 +154,23 @@ def get_clickable_code_block(title, content_str, block_id):
     
     html = f"""
     <div class="mt-4">
-        <h4 class="text-lg font-semibold text-gray-800 mb-2">{title}</h4>
+        <h4 class="h5 fw-semibold text-dark mb-2">{title}</h4>
         
         <div onclick="{onclick_js}" id="block-{block_id}" 
-             class="clickable-code-block-container 
-             bg-white border border-gray-200 rounded-lg p-3 shadow-sm transition hover:shadow-lg">
+             class="clickable-code-block-container card shadow-sm">
             
-            <pre class="
-                font-mono text-sm text-gray-800 
-                whitespace-nowrap overflow-hidden text-ellipsis 
-                m-0 p-0 block
-            ">
-                {full_content}
-            </pre>
+            <div class="card-body p-3 d-flex align-items-center bg-light">
+                <pre class="
+                    font-monospace text-sm text-dark 
+                    code-single-line flex-grow-1 m-0 p-0 
+                ">
+                    {full_content}
+                </pre>
+                
+                <span class="badge bg-dark ms-3 shadow-sm" style="font-size: 0.7rem;">Click to Copy</span>
+            </div>
             
             <div id="feedback-{block_id}" class="copy-feedback">Copied!</div>
-            
-            <div class="absolute top-1/2 right-4 transform -translate-y-1/2 
-                        text-xs font-semibold text-gray-500 bg-white px-2 py-0.5 rounded shadow-lg border border-gray-100">
-                Click to Copy
-            </div>
         </div>
     </div>
     """
@@ -216,22 +231,22 @@ def process_and_store_results(midi_data, midi_filename, config_data):
             
 
 def upload_view():
-    
     st.markdown(AUTHOR_INFO, unsafe_allow_html=True)
-    st.markdown(f"<div class='max-w-xl mx-auto mt-10'>", unsafe_allow_html=True)
+    st.markdown(f"<div class='container' style='max-width: 600px; margin-top: 2rem;'>", unsafe_allow_html=True)
     
-    st.markdown(f"<h1 class='text-4xl font-extrabold text-gray-900 mb-2'>MIDI to Bloxd Music Converter</h1>", unsafe_allow_html=True)
+    st.markdown(f"<h1 class='display-6 fw-bold text-dark'>MIDI to Bloxd Music Converter</h1>", unsafe_allow_html=True)
     
-    st.markdown("<p class='mt-2 text-lg text-gray-500'>Convert MIDI files into the compressed strings required for Bloxd.</p>", unsafe_allow_html=True)
+    st.markdown("<p class='lead text-muted mb-4'>Convert MIDI files into the compressed strings required for Bloxd.</p>", unsafe_allow_html=True)
+    
     
     st.markdown("""
-        <div class="relative mt-8">
-            <div class="absolute inset-0 flex flex-col items-center justify-center p-4 pointer-events-none z-10">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-10 h-10 text-gray-400">
+        <div class="position-relative">
+            <div class="position-absolute w-100 h-100 d-flex flex-column justify-content-center align-items-center p-4 pointer-events-none z-10">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="text-muted mb-2" style="width: 32px; height: 32px;">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
                 </svg>
-                <p class="mt-2 text-base font-medium text-gray-700">Drag and drop file here</p>
-                <p class="text-sm text-gray-500">.mid or .midi files only (Max 200MB)</p>
+                <p class="mb-0 fw-medium text-dark">Drag and drop file here</p>
+                <p class="small text-muted mb-0">.mid or .midi files only (Max 200MB)</p>
             </div>
 """, unsafe_allow_html=True)
 
@@ -241,7 +256,7 @@ def upload_view():
         label_visibility="collapsed"
     )
 
-    st.markdown("</div>", unsafe_allow_html=True) 
+    st.markdown("</div>", unsafe_allow_html=True)
 
     if uploaded_file:
         st.session_state.midi_data = uploaded_file.getvalue()
@@ -254,8 +269,8 @@ def upload_view():
 
 def processing_view():
     
-    st.markdown(f"<div class='text-center max-w-xl mx-auto mt-32'>", unsafe_allow_html=True)
-    st.markdown(f"<h3 class='text-3xl font-bold text-gray-800'>Processing file: {st.session_state.midi_filename}</h3>", unsafe_allow_html=True)
+    st.markdown(f"<div class='container text-center' style='max-width: 600px; margin-top: 8rem;'>", unsafe_allow_html=True)
+    st.markdown(f"<h3 class='h2 fw-bold text-dark'>Processing file: {st.session_state.midi_filename}</h3>", unsafe_allow_html=True)
     
     with st.spinner("Analyzing MIDI, mapping sounds, and generating audio preview. Please wait..."):
         config_str = st.session_state.get("config_json", '{}')
@@ -279,7 +294,7 @@ def results_view():
         st.caption(f"File: **{st.session_state.midi_filename}**")
         st.divider()
 
-        st.markdown("<p class='font-semibold mb-2'>Layering & Palette Config (JSON)</p>", unsafe_allow_html=True)
+        st.markdown("<p class='fw-semibold mb-2'>Layering & Palette Config (JSON)</p>", unsafe_allow_html=True)
         
         config_text = st.text_area(
             "Config JSON", 
@@ -289,7 +304,7 @@ def results_view():
             label_visibility="collapsed"
         )
         
-        st.markdown("<div class='mt-5'>", unsafe_allow_html=True)
+        st.markdown("<div class='mt-3'>", unsafe_allow_html=True)
         if st.button("Rerun Conversion", use_container_width=True):
             try:
                 st.session_state.config_json = config_text
@@ -311,15 +326,14 @@ def results_view():
 
 
     st.markdown(AUTHOR_INFO, unsafe_allow_html=True)
-    st.markdown("<div class='max-w-3xl mx-auto pt-4'>", unsafe_allow_html=True)
-    st.markdown(f"<h3 class='text-4xl font-extrabold text-gray-900'>Conversion Complete!</h3>", unsafe_allow_html=True)
+    st.markdown("<div class='container' style='max-width: 800px; margin-top: 1rem;'>", unsafe_allow_html=True)
+    st.markdown(f"<h3 class='display-6 fw-bold text-dark'>Conversion Complete!</h3>", unsafe_allow_html=True)
     
-    st.markdown(f"<p class='mt-2 text-gray-600'>Read the <a href='{DOCS_LINK}' target='_blank' class='text-red-600 font-semibold no-underline hover:underline'>documentation</a> if you are confused. Click on any box below to copy the **full** code string.</p>", unsafe_allow_html=True)
+    st.markdown(f"<p class='text-secondary'>Click on any box below to copy the **full** code string. Read the <a href='{DOCS_LINK}' target='_blank' style='color: var(--bs-red-custom); font-weight: 500;'>documentation</a> if you are confused.</p>", unsafe_allow_html=True)
     
     if results.get("preview"):
-        st.markdown("<div class='mt-6'>", unsafe_allow_html=True)
-        st.markdown("<h4 class='text-xl font-semibold text-gray-800 mb-2'>Preview Audio</h4>", unsafe_allow_html=True)
-        st.markdown("<p class='text-sm text-gray-500'>This simulation uses sampled sounds to estimate how the track will sound in-game.</p>", unsafe_allow_html=True)
+        st.markdown("<div class='mt-4'>", unsafe_allow_html=True)
+        st.markdown("<h4 class='h5 fw-semibold text-dark mb-2'>Preview Audio</h4>", unsafe_allow_html=True)
         st.audio(results["preview"], format='audio/wav')
         st.markdown("</div>", unsafe_allow_html=True)
     else:
