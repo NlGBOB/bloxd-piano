@@ -19,9 +19,9 @@ VOL:[1,.8,.6,.4,.2,.1],
 play:function(s){
 S.stop("mus");S.stop("dec");
 let M=this,D=M.D,P=M.P,O=M.O,SND=M.SND,VOL=M.VOL;
-let i=0,T=0,l=s.length;
+let i=0,l=s.length;
 const f=()=>{
-let c=50;
+let c=50,T=0;
 do{
 if(i>=l)return;
 let v=0,k=0;
@@ -37,7 +37,7 @@ idx=idx&-(idx>=0);
 api.broadcastSound(SND[snd],VOL[vol],P[idx]);
 },T,"mus");
 }while(--c>0);
-if(i<l)S.run(f,0,"dec");
+if(i<l)S.run(f,T,"dec");
 };
 S.run(f,0,"dec");
 },
