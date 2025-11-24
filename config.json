@@ -1,0 +1,13 @@
+{
+    "palette": [
+        "harp_pling",
+        "game_start_countdown_01",
+        "game_start_countdown_02",
+        "game_start_countdown_03",
+        "game_start_countdown_final"
+    ],
+    "layering": {
+        "comment": "Max sounds per note. 1 = no layering. >1 = harp_pling + layers. max layer = 5",
+        "max_layers": 2
+    }
+}
