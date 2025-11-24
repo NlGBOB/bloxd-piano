@@ -1,5 +1,5 @@
 import { Midi } from '@tonejs/midi';
-import { DATA_CHARSET, PADDING_CHAR, BASE, MAX_DELAY } from '../constants';
+import { CHARSET, BASE, MAX_DELAY } from '../constants';
 
 const PIANO_HZ = [
     27.50, 29.14, 30.87, 32.70, 34.65, 36.71, 38.89, 41.20, 43.65, 46.25, 49.00, 51.91,
@@ -14,15 +14,6 @@ const PIANO_HZ = [
 
 const TICKS_PER_SECOND = 20;
 const PRIMARY_SOUND_NAME = "harp_pling";
-
-const VOL_LEVELS = [
-    1.00, 0.95, 0.90, 0.85, 0.80, 0.75, 0.70, 0.65, 0.60, 0.55,
-    0.50, 0.45, 0.40, 0.35, 0.30, 0.25, 0.20, 0.15, 0.10, 0.05
-];
-
-const BLOCK_SIZE = 16000;
-const HEADER_SIZE = 4;
-const MAX_DATA_PER_BLOCK = BLOCK_SIZE - HEADER_SIZE;
 
 const PIANO_SOUND_DATA = [
     { filename: "harp_pling", base_pitch_hz: 260.79, base_duration_sec: 0.84 },
@@ -49,20 +40,6 @@ const hzToClosestPianoNoteIndex = (targetHz) => {
     return closestIndex;
 };
 
-const getClosestVolumeIndex = (targetVol) => {
-    let closestIdx = 19;
-    let minDiff = Infinity;
-
-    for (let i = 0; i < VOL_LEVELS.length; i++) {
-        const diff = Math.abs(targetVol - VOL_LEVELS[i]);
-        if (diff < minDiff) {
-            minDiff = diff;
-            closestIdx = i;
-        }
-    }
-    return closestIdx;
-};
-
 const findPianoSoundsForNote = (targetNote, availableSounds, config) => {
     const maxLayers = config?.layering?.max_layers || 2;
     const candidates = [];
@@ -85,52 +62,34 @@ const findPianoSoundsForNote = (targetNote, availableSounds, config) => {
     if (candidates.length === 0) return [];
     candidates.sort((a, b) => a.duration_diff - b.duration_diff);
 
+    if (maxLayers <= 1) return [candidates[0]];
+
     const chosenSounds = [];
     const harpPling = candidates.find(c => c.filename === PRIMARY_SOUND_NAME);
-    if (harpPling) {
-        chosenSounds.push(harpPling);
-    } else if (candidates.length > 0) {
-        chosenSounds.push(candidates[0]);
-    }
+    if (harpPling) chosenSounds.push(harpPling);
 
-    if (maxLayers > 1) {
-        const layerSoundNames = PIANO_SOUND_DATA
-            .filter(s => s.filename !== PRIMARY_SOUND_NAME)
-            .map(s => s.filename);
+    const layerSoundNames = PIANO_SOUND_DATA
+        .filter(s => s.filename !== PRIMARY_SOUND_NAME)
+        .map(s => s.filename);
 
-        const layerCandidates = candidates.filter(c => layerSoundNames.includes(c.filename));
-
-        const slotsRemaining = maxLayers - chosenSounds.length;
-        if (slotsRemaining > 0) {
-            chosenSounds.push(...layerCandidates.slice(0, slotsRemaining));
-        }
-    }
+    const layerCandidates = candidates.filter(c => layerSoundNames.includes(c.filename));
+    const numLayersToAdd = harpPling ? maxLayers - 1 : maxLayers;
+    chosenSounds.push(...layerCandidates.slice(0, numLayersToAdd));
 
     return chosenSounds;
 };
 
-const encodeLengthHeader = (length) => {
-    let chars = "";
-    let val = length;
-    for (let i = 0; i < HEADER_SIZE; i++) {
-        const remainder = val % BASE;
-        chars = DATA_CHARSET[remainder] + chars;
-        val = Math.floor(val / BASE);
-    }
-    return chars;
-};
-
 const encodeEvent = (soundIdx, volumeIdx, noteIdx, delay) => {
-    const mD = MAX_DELAY;
+    const mD = 300;
     const mN = 88;
-    const mV = 20;
+    const mV = 6;
 
     let val = delay + (noteIdx * mD) + (volumeIdx * mD * mN) + (soundIdx * mD * mN * mV);
 
     let chars = "";
     for (let i = 0; i < 4; i++) {
         const remainder = val % BASE;
-        chars = DATA_CHARSET[remainder] + chars;
+        chars = CHARSET[remainder] + chars;
         val = Math.floor(val / BASE);
     }
 
@@ -141,13 +100,8 @@ export const processMidiBuffer = (arrayBuffer, config = {}) => {
     const midi = new Midi(arrayBuffer);
     const parsedNotes = [];
 
-    let maxVelocityFound = 1;
-
     midi.tracks.forEach(track => {
         track.notes.forEach(note => {
-            if (note.velocity > maxVelocityFound) {
-                maxVelocityFound = note.velocity;
-            }
             parsedNotes.push({
                 start_time: note.time,
                 pitch_hz: midiToHz(note.midi),
@@ -169,21 +123,23 @@ export const processMidiBuffer = (arrayBuffer, config = {}) => {
         if (!chosenSounds.length) continue;
 
         const noteIndex = hzToClosestPianoNoteIndex(note.pitch_hz);
+        const layerSounds = chosenSounds.filter(s => s.filename !== PRIMARY_SOUND_NAME);
+        const numLayers = layerSounds.length;
+
         const currentTick = Math.round(note.start_time * TICKS_PER_SECOND);
-
-        const baseVolume = note.velocity / maxVelocityFound;
-
         let delay = currentTick - lastTick;
         if (delay < 0) delay = 0;
 
         for (const sound of chosenSounds) {
+            let volumeIndex = (sound.filename === PRIMARY_SOUND_NAME) ? 0 : numLayers;
+            if (volumeIndex > 5) volumeIndex = 5;
+
             gameEvents.push({
                 sound_index: soundToIndex[sound.filename],
                 note_index: noteIndex,
                 delay: delay,
                 tick: currentTick,
-                temp_volume: baseVolume,
-                volume_index: 0
+                volume_index: volumeIndex
             });
             delay = 0;
         }
@@ -192,38 +148,16 @@ export const processMidiBuffer = (arrayBuffer, config = {}) => {
 
     gameEvents.sort((a, b) => a.tick - b.tick);
 
-    let i = 0;
-
-    while (i < gameEvents.length) {
-        let j = i;
-        while (j < gameEvents.length && gameEvents[j].tick === gameEvents[i].tick) {
-            j++;
-        }
-
-        const count = j - i;
-
-        const densityMultiplier = count > 0 ? (1.0 / Math.sqrt(count)) : 1.0;
-
-        for (let k = i; k < j; k++) {
-            const finalVol = gameEvents[k].temp_volume * densityMultiplier;
-            gameEvents[k].volume_index = getClosestVolumeIndex(finalVol);
-        }
-
-        i = j;
-    }
-
-    let fullEncodedString = "";
+    let encodedString = "";
     lastTick = 0;
 
     for (const event of gameEvents) {
         let rawDelay = event.tick - lastTick;
-
         while (rawDelay >= MAX_DELAY) {
-            fullEncodedString += encodeEvent(0, 19, 0, MAX_DELAY - 1);
+            encodedString += encodeEvent(0, 5, 0, MAX_DELAY - 1);
             rawDelay -= (MAX_DELAY - 1);
         }
-
-        fullEncodedString += encodeEvent(
+        encodedString += encodeEvent(
             event.sound_index,
             event.volume_index,
             event.note_index,
@@ -232,22 +166,8 @@ export const processMidiBuffer = (arrayBuffer, config = {}) => {
         lastTick = event.tick;
     }
 
-    const finalBlocks = [];
-
-    for (let i = 0; i < fullEncodedString.length; i += MAX_DATA_PER_BLOCK) {
-        const chunk = fullEncodedString.slice(i, i + MAX_DATA_PER_BLOCK);
-        const header = encodeLengthHeader(chunk.length);
-        let block = header + chunk;
-
-        while (block.length < BLOCK_SIZE) {
-            block += PADDING_CHAR;
-        }
-
-        finalBlocks.push(block);
-    }
-
     return {
-        encodedString: finalBlocks.join(""),
+        encodedString: encodedString,
         stats: {
             total_notes: parsedNotes.length,
             mapped_events: gameEvents.length
