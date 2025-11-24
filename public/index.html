@@ -3,8 +3,18 @@
 
 <head>
     <meta charset="utf-8" />
+    <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>BEEP</title>
+    <meta name="theme-color" content="#000000" />
+    <meta name="description" content="Convert MIDI files to Bloxd.io music blocks" />
+    <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
+    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+
+    <!-- Load MIDI Player, Engine, and FocusVisible from CDN -->
+    <script
+        src="https://cdn.jsdelivr.net/combine/npm/tone@14.7.58,npm/@magenta/music@1.23.1/es6/core.js,npm/focus-visible@5,npm/html-midi-player@1.5.0"></script>
+
+    <title>Bloxd Piano</title>
 </head>
 
 <body>
