@@ -42,7 +42,7 @@ if(i<l)S.run(f,0,"dec");
 S.run(f,0,"dec");
 },
 stop:function(){S.stop("mus");S.stop("dec");}
-};""
+};
 `;
 
 export const SETUP_CODE = (SCHEDULER + TICK_LOOP + MUSIC_ENGINE).replace(/\n\s*/g, '');
