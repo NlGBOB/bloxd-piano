@@ -137,101 +137,6 @@ const encodeEvent = (soundIdx, volumeIdx, noteIdx, delay) => {
     return chars;
 };
 
-const generateSimulationMidi = (gameEvents) => {
-    const TICKS_PER_QUARTER = 480;
-    const MIDI_TICKS_PER_GAME_TICK = 48; // 20 game ticks/sec
-
-    const tracks = [
-        [
-            0, 255, 81, 3, 0x07, 0xA1, 0x20,
-            0, 255, 47, 0
-        ],
-        []
-    ];
-
-    const noteEvents = [];
-
-    gameEvents.forEach(evt => {
-        const startMidiTick = evt.tick * MIDI_TICKS_PER_GAME_TICK;
-        const midiNote = evt.note_index + 21;
-
-        const velocity = 1;
-
-        const soundInfo = PIANO_SOUND_DATA[evt.sound_index];
-        const targetHz = PIANO_HZ[evt.note_index];
-        const rate = targetHz / soundInfo.base_pitch_hz;
-        const durationSec = soundInfo.base_duration_sec / rate;
-
-        const displayDuration = Math.max(0.1, Math.min(durationSec, 0.5));
-
-        const durationMidiTicks = Math.max(1, Math.round((displayDuration / 0.05) * MIDI_TICKS_PER_GAME_TICK));
-
-        noteEvents.push({
-            type: 0x90, // Note On
-            time: startMidiTick,
-            note: midiNote,
-            velocity: velocity
-        });
-
-        noteEvents.push({
-            type: 0x80, // Note Off
-            time: startMidiTick + durationMidiTicks,
-            note: midiNote,
-            velocity: 0
-        });
-    });
-
-    noteEvents.sort((a, b) => a.time - b.time);
-
-    let lastTime = 0;
-    const track1 = tracks[1];
-
-    noteEvents.forEach(evt => {
-        let delta = evt.time - lastTime;
-        if (delta < 0) delta = 0;
-        lastTime = evt.time;
-
-        let val = delta;
-        const buffer = [];
-        do {
-            let byte = val & 0x7F;
-            val >>= 7;
-            if (buffer.length > 0) byte |= 0x80;
-            buffer.unshift(byte);
-        } while (val > 0);
-
-        if (buffer.length === 0) buffer.push(0);
-
-        track1.push(...buffer);
-        track1.push(evt.type, evt.note, evt.velocity);
-    });
-
-    track1.push(0, 255, 47, 0);
-
-    const fileBytes = [
-        0x4D, 0x54, 0x68, 0x64, // MThd
-        0, 0, 0, 6,             // Length 6
-        0, 1,                   // Format 1
-        0, 2,                   // 2 Tracks
-        (TICKS_PER_QUARTER >> 8) & 0xFF, TICKS_PER_QUARTER & 0xFF
-    ];
-
-    tracks.forEach(trk => {
-        fileBytes.push(0x4D, 0x54, 0x72, 0x6B);
-        const len = trk.length;
-        fileBytes.push(
-            (len >> 24) & 0xFF,
-            (len >> 16) & 0xFF,
-            (len >> 8) & 0xFF,
-            len & 0xFF
-        );
-        fileBytes.push(...trk);
-    });
-
-    return new Uint8Array(fileBytes);
-};
-
-
 export const processMidiBuffer = (arrayBuffer, config = {}) => {
     const midi = new Midi(arrayBuffer);
     const parsedNotes = [];
@@ -341,12 +246,8 @@ export const processMidiBuffer = (arrayBuffer, config = {}) => {
         finalBlocks.push(block);
     }
 
-    const simulationMidiBytes = generateSimulationMidi(gameEvents);
-
     return {
         encodedString: finalBlocks.join(""),
-        gameEvents: gameEvents,
-        simulationMidiBytes: simulationMidiBytes,
         stats: {
             total_notes: parsedNotes.length,
             mapped_events: gameEvents.length

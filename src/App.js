@@ -1,16 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
 import { processMidiBuffer } from './utils/midiProcessor';
-import { renderBloxdAudio } from './utils/audioRenderer';
 import { SCHEDULER_CODE, MUSIC_ENGINE_CODE, TICK_WRAPPER, TICK_CORE, COORDINATE_HELPER } from './constants';
 import MatrixBackground from './MatrixBackground';
-import MidiPlayerBlock from './MidiPlayerBlock';
 
 function App() {
     const [file, setFile] = useState(null);
-    const [previewUrl, setPreviewUrl] = useState(null);
-    const [generatedAudioUrl, setGeneratedAudioUrl] = useState(null);
-    const [generatedMidiUrl, setGeneratedMidiUrl] = useState(null);
     const [config, setConfig] = useState({ maxLayers: 2 });
     const [hasTick, setHasTick] = useState(false);
     const [results, setResults] = useState(null);
@@ -20,42 +15,24 @@ function App() {
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
-        return () => {
-            if (previewUrl) URL.revokeObjectURL(previewUrl);
-            if (generatedAudioUrl) URL.revokeObjectURL(generatedAudioUrl);
-            if (generatedMidiUrl) URL.revokeObjectURL(generatedMidiUrl);
-        };
-    }, [previewUrl, generatedAudioUrl, generatedMidiUrl]);
-
-    useEffect(() => {
-        if (file) triggerProcessing(file);
+        if (file) processFile(file);
     }, [config.maxLayers]);
 
     const handleFileChange = (e) => {
         const selected = e.target.files[0];
         if (selected) {
             setFile(selected);
-            const url = URL.createObjectURL(selected);
-            setPreviewUrl(url);
-            triggerProcessing(selected);
+            processFile(selected);
         }
     };
 
-    const triggerProcessing = (fileToProcess) => {
+    const processFile = async (fileToProcess) => {
         setLoading(true);
         setError(null);
         setResults(null);
         setChunks([]);
         setCoords([]);
-        setGeneratedAudioUrl(null);
-        setGeneratedMidiUrl(null);
 
-        setTimeout(() => {
-            processFile(fileToProcess);
-        }, 100);
-    };
-
-    const processFile = async (fileToProcess) => {
         try {
             const arrayBuffer = await fileToProcess.arrayBuffer();
             const data = processMidiBuffer(arrayBuffer, { layering: { max_layers: config.maxLayers } });
@@ -68,21 +45,9 @@ function App() {
             setChunks(chunkList);
             setCoords(chunkList.map(() => ({ x: '', y: '', z: '' })));
             setResults(data);
-
-            // 1. Generate Game-Accurate Audio (WAV)
-            const wavUrl = await renderBloxdAudio(data.gameEvents);
-            setGeneratedAudioUrl(wavUrl);
-
-            // 2. Generate Visualizer Data (MIDI)
-            if (data.simulationMidiBytes) {
-                const midiBlob = new Blob([data.simulationMidiBytes], { type: 'audio/midi' });
-                const midiUrl = URL.createObjectURL(midiBlob);
-                setGeneratedMidiUrl(midiUrl);
-            }
-
         } catch (err) {
             console.error(err);
-            setError("Failed to parse MIDI or generate audio.");
+            setError("Failed to parse MIDI.");
         } finally {
             setLoading(false);
         }
@@ -181,28 +146,12 @@ function App() {
                             </div>
                         </div>
                     </div>
+
+                    {loading && <div className="status-bar" style={{ borderColor: '#fbbf24', color: '#fbbf24' }}>Processing...</div>}
                 </div>
 
                 <div className="results">
                     {error && <div className="error-bar">{error}</div>}
-
-                    {previewUrl && (
-                        <div className="steps-container" style={{ marginBottom: '1.5rem' }}>
-                            <MidiPlayerBlock
-                                src={previewUrl}
-                                generatedAudioSrc={generatedAudioUrl}
-                                generatedMidiSrc={generatedMidiUrl}
-                            />
-                        </div>
-                    )}
-
-                    {loading && (
-                        <div className="steps-container">
-                            <div className="status-bar" style={{ borderColor: '#fbbf24', color: '#fbbf24' }}>
-                                Generating Code & Audio Preview... Please Wait...
-                            </div>
-                        </div>
-                    )}
 
                     {results && !loading && (
                         <div className="steps-container">
@@ -210,6 +159,7 @@ function App() {
                                 Success! {results.stats.mapped_events} events encoded.
                             </div>
 
+                            {/* STEP 1 */}
                             <div className="step-block">
                                 <h2 className="step-title"><span className="step-count">STEP 1/5</span> World Setup</h2>
                                 <p className="step-desc">Paste this at the <strong>TOP</strong> of your World Code. (It includes a helper to find coordinates).</p>
@@ -233,6 +183,7 @@ function App() {
                                 )}
                             </div>
 
+                            {/* STEP 2 & 3 */}
                             <div className="step-block">
                                 <h2 className="step-title"><span className="step-count">STEPS 2 & 3 / 5</span> Place Data Blocks</h2>
                                 <p className="step-desc">
@@ -259,6 +210,7 @@ function App() {
                                 ))}
                             </div>
 
+                            {/* STEP 4 */}
                             <div className="step-block">
                                 <h2 className="step-title"><span className="step-count">STEP 4/5</span> Play Music</h2>
                                 <p className="step-desc">
@@ -272,6 +224,7 @@ function App() {
                                 />
                             </div>
 
+                            {/* STEP 5 (Cleanup) */}
                             <div className="step-block cleanup-block">
                                 <h2 className="step-title"><span className="step-count">STEP 5/5</span> Cleanup</h2>
                                 <p className="step-desc">
@@ -282,7 +235,7 @@ function App() {
                         </div>
                     )}
 
-                    {!previewUrl && !loading && !results && !error && (
+                    {!results && !loading && !error && (
                         <div style={{ textAlign: 'center', color: 'var(--text-secondary)', marginTop: '4rem', border: '2px dashed var(--border-color)', padding: '4rem', background: 'rgba(24, 27, 33, 0.8)' }}>
                             WAITING FOR INPUT...
                         </div>

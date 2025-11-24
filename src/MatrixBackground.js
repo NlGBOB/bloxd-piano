@@ -28,7 +28,7 @@ const MatrixBackground = () => {
             ctx.fillStyle = 'rgba(15, 17, 21, 0.05)';
             ctx.fillRect(0, 0, width, height);
 
-            ctx.fillStyle = '#0F0';
+            ctx.fillStyle = '#0F0'; // Green text
             ctx.font = `${fontSize}px monospace`;
 
             for (let i = 0; i < drops.length; i++) {
